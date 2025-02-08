@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useTheme } from "../Home/ThemeContext";
 import { FaFile, FaFolder, FaCode } from "react-icons/fa";
-import { repositoriesApi } from '../api/repositories'; // Add this import
-import { actions } from '../redux/repositorySlice'; // Add this import
-import { actions as fileActions } from '../redux/fileSlice'; // Add this import
+import { repositoriesApi } from '../api/repositories';
+import { filesApi } from '../api/files';
+import { actions } from '../redux/repositorySlice';
+import { actions as fileActions } from '../redux/fileSlice';
 
 const FileExplorer = () => {
   const dispatch = useDispatch();
@@ -33,6 +34,24 @@ const FileExplorer = () => {
     loadRepositories();
   }, [dispatch]);
 
+  useEffect(() => {
+    if (repoId) {
+      const loadFiles = async () => {
+        try {
+          dispatch(fileActions.setFileLoading(true));
+          const files = await filesApi.getFilesByRepository(repoId);
+          dispatch(fileActions.setRepositoryFiles(files));
+        } catch (error) {
+          console.error('Error loading files:', error);
+        } finally {
+          dispatch(fileActions.setFileLoading(false));
+        }
+      };
+
+      loadFiles();
+    }
+  }, [repoId, dispatch]);
+
   const handleFileClick = (file) => {
     if (file.type !== 'folder') {
       dispatch(fileActions.setFileLoading(true));
@@ -41,8 +60,38 @@ const FileExplorer = () => {
     }
   };
 
-  const handleRepositoryClick = (repository) => {
-    navigate(`/devspaces/${repository._id}`);
+  const handleRepositoryClick = async (repository) => {
+    try {
+      dispatch(actions.setRepositoryLoading(true));
+      dispatch(actions.setRepository(repository));
+      
+      // Load files for the selected repository
+      const files = await filesApi.getFilesByRepository(repository.id);
+  
+      dispatch(fileActions.setRepositoryFiles(files));
+      
+      // Set the first file as current if available
+      if (files.length > 0) {
+        dispatch(fileActions.setFile(files[0]));
+      }
+    } catch (error) {
+      console.error('Error loading repository:', error);
+      dispatch(actions.setRepositoryError(error.message));
+    } finally {
+      dispatch(actions.setRepositoryLoading(false));
+    }
+  };
+
+  const toggleFolder = (folderId) => {
+    setExpandedFolders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(folderId)) {
+        newSet.delete(folderId);
+      } else {
+        newSet.add(folderId);
+      }
+      return newSet;
+    });
   };
 
   if (loading) {
@@ -90,7 +139,11 @@ const FileExplorer = () => {
               className={`flex items-center gap-2 py-2 px-3 cursor-pointer
                 transition-all duration-200 ${currentFile?._id === file._id ? 'bg-white/10' : ''}`}
             >
-              <FaFile className="text-gray-400" />
+              {file.type === 'folder' ? (
+                <FaFolder className="text-gray-400" />
+              ) : (
+                <FaFile className="text-gray-400" />
+              )}
               <span className="text-gray-300 text-sm">{file.filename}</span>
             </motion.div>
           ))}

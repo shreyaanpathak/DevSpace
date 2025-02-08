@@ -12,7 +12,6 @@ import FileExplorer from "./FileExplorer";
 import AIAssistant from "./AIAssistant";
 import Collaborators from "./Collaborators";
 import TerminalComponent from "./TerminalComponent";
-import ErrorBoundary from "./ErrorBoundary";
 import { FaCode, FaUser } from "react-icons/fa";
 
 const DEFAULT_FILES = [
@@ -220,11 +219,5 @@ const Codespace = () => {
   );
 };
 
-// ErrorBoundary wrapper
-const CodespaceWithErrorBoundary = () => (
-  <ErrorBoundary>
-    <Codespace />
-  </ErrorBoundary>
-);
 
-export default CodespaceWithErrorBoundary;
+export default Codespace;

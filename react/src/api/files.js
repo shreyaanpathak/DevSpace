@@ -12,7 +12,8 @@ export const filesApi = {
 
   getFilesByRepository: async (repoId) => {
     try {
-      const response = await api.get(`/files/repositories/${repoId}/files`);
+      const response = await api.get(`/files/repositories/${repoId}/files`)
+      console.log(response)
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to fetch repository files');

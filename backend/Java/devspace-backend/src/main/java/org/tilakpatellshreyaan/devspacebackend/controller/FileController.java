@@ -1,5 +1,6 @@
 package org.tilakpatellshreyaan.devspacebackend.controller;
 
+import org.bson.types.ObjectId;
 import org.springframework.http.ResponseEntity;
 import org.tilakpatellshreyaan.devspacebackend.model.FileData;
 import org.tilakpatellshreyaan.devspacebackend.repository.FileDataRepository;
@@ -20,7 +21,7 @@ public class FileController {
   }
 
   @GetMapping("/{fileId}")
-  public ResponseEntity<?> getFileById(@PathVariable String fileId) {
+  public ResponseEntity<?> getFileById(@PathVariable ObjectId fileId) {
     Optional<FileData> fileOpt = fileRepository.findById(fileId);
     if (fileOpt.isPresent()) {
       return ResponseEntity.ok(fileOpt.get());
@@ -30,8 +31,9 @@ public class FileController {
   }
 
   @GetMapping("/repositories/{repoId}/files")
-  public ResponseEntity<?> getFilesByRepository(@PathVariable String repoId) {
+  public ResponseEntity<?> getFilesByRepository(@PathVariable ObjectId repoId) {
     List<FileData> files = fileRepository.findByRepositoryId(repoId);
+    System.out.println(files);
     if (!files.isEmpty()) {
       return ResponseEntity.ok(files);
     } else {
@@ -50,7 +52,7 @@ public class FileController {
   }
 
   @PutMapping("/{fileId}")
-  public ResponseEntity<?> updateFile(@PathVariable String fileId, @RequestBody FileData updatedFile) {
+  public ResponseEntity<?> updateFile(@PathVariable ObjectId fileId, @RequestBody FileData updatedFile) {
     Optional<FileData> fileOpt = fileRepository.findById(fileId);
     if (fileOpt.isPresent()) {
       FileData file = fileOpt.get();

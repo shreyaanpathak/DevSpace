@@ -1,6 +1,8 @@
 package org.tilakpatellshreyaan.devspacebackend.model;
 
 import lombok.Data;
+
+import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -12,6 +14,6 @@ public class FileData {
 
   private String filename;
   private String language;
-  private String repositoryId;
+  private ObjectId repositoryId;
   private String content;
 }
