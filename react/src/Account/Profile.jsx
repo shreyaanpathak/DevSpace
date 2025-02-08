@@ -1,6 +1,6 @@
 // src/Account/Profile.jsx
-import { useState, useRef } from "react";
-import { useSelector } from "react-redux";
+import { useState, useRef, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../Home/ThemeContext";
 import Navbar from "../Navbar";
@@ -8,27 +8,13 @@ import Starfield from "../Home/Starfield";
 import MatrixBackground from "../Home/MatrixBackground";
 import CircuitBackground from "../Home/CircuitBackground";
 import {
-  FiEdit2,
-  FiGithub,
-  FiGlobe,
-  FiLinkedin,
-  FiTwitter,
-  FiMapPin,
-  FiMail,
-  FiCpu,
-  FiCode,
-  FiActivity,
-  FiStar,
-  FiBox,
-  FiTrello,
-  FiUsers,
-  FiCheckCircle,
-  FiFolder,
-  FiAward,
-  FiClock,
-  FiBriefcase,
+  FiEdit2, FiGithub, FiGlobe, FiLinkedin, FiTwitter,
+  FiMapPin, FiMail, FiCpu, FiCode, FiActivity,
+  FiStar, FiBox, FiTrello, FiUsers, FiCheckCircle,
+  FiFolder, FiAward, FiClock, FiBriefcase
 } from "react-icons/fi";
 
+// StatCard Component
 const StatCard = ({ title, value, icon: Icon, change }) => {
   const { theme } = useTheme();
   return (
@@ -36,9 +22,7 @@ const StatCard = ({ title, value, icon: Icon, change }) => {
       whileHover={{ scale: 1.02 }}
       className={`${theme.panel} rounded-xl p-6 flex items-center gap-4`}
     >
-      <div
-        className={`p-3 rounded-lg bg-gradient-to-r ${theme.primary} bg-opacity-10`}
-      >
+      <div className={`p-3 rounded-lg bg-gradient-to-r ${theme.primary} bg-opacity-10`}>
         <Icon className="text-2xl text-blue-400" />
       </div>
       <div className="flex-1">
@@ -46,13 +30,8 @@ const StatCard = ({ title, value, icon: Icon, change }) => {
         <div className="flex items-baseline gap-2">
           <p className="text-2xl font-bold text-white">{value}</p>
           {change && (
-            <span
-              className={`text-sm ${
-                change > 0 ? "text-green-400" : "text-red-400"
-              }`}
-            >
-              {change > 0 ? "+" : ""}
-              {change}%
+            <span className={`text-sm ${change > 0 ? "text-green-400" : "text-red-400"}`}>
+              {change > 0 ? "+" : ""}{change}%
             </span>
           )}
         </div>
@@ -61,6 +40,7 @@ const StatCard = ({ title, value, icon: Icon, change }) => {
   );
 };
 
+// ProjectCard Component
 const ProjectCard = ({ project }) => {
   const { theme } = useTheme();
   return (
@@ -80,15 +60,11 @@ const ProjectCard = ({ project }) => {
           </div>
           <p className="text-gray-400 mt-1">{project.description}</p>
         </div>
-        <div
-          className={`px-3 py-1 rounded-full text-sm ${
-            project.status === "Active"
-              ? "bg-green-500/20 text-green-400"
-              : project.status === "In Progress"
-              ? "bg-yellow-500/20 text-yellow-400"
-              : "bg-gray-500/20 text-gray-400"
-          }`}
-        >
+        <div className={`px-3 py-1 rounded-full text-sm ${
+          project.status === "Active" ? "bg-green-500/20 text-green-400" :
+          project.status === "In Progress" ? "bg-yellow-500/20 text-yellow-400" :
+          "bg-gray-500/20 text-gray-400"
+        }`}>
           {project.status}
         </div>
       </div>
@@ -96,8 +72,8 @@ const ProjectCard = ({ project }) => {
         {project.technologies.map((tech, index) => (
           <span
             key={index}
-            className={`px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-sm
-              hover:bg-blue-500/30 transition-colors cursor-default`}
+            className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-sm
+              hover:bg-blue-500/30 transition-colors cursor-default"
           >
             {tech}
           </span>
@@ -136,14 +112,13 @@ const ProjectCard = ({ project }) => {
   );
 };
 
+// ActivityItem Component
 const ActivityItem = ({ activity }) => {
   const { theme } = useTheme();
   return (
     <div className="flex gap-4 group">
-      <div
-        className={`p-2 rounded-lg bg-gradient-to-r ${theme.primary} bg-opacity-10 h-fit
-        group-hover:scale-110 transition-transform`}
-      >
+      <div className={`p-2 rounded-lg bg-gradient-to-r ${theme.primary} bg-opacity-10 h-fit
+        group-hover:scale-110 transition-transform`}>
         <activity.icon className="text-blue-400" />
       </div>
       <div>
@@ -156,6 +131,7 @@ const ActivityItem = ({ activity }) => {
   );
 };
 
+// Skill Component
 const Skill = ({ name, level }) => {
   const { theme } = useTheme();
   return (
@@ -176,91 +152,69 @@ const Skill = ({ name, level }) => {
   );
 };
 
+// Main Profile Component
 export default function Profile() {
+  const dispatch = useDispatch();
   const { theme } = useTheme();
   const { currentUser } = useSelector((state) => state.accountReducer);
+  const { stats, projects, activities, skills, loading, error } = useSelector(
+    (state) => state.accountReducer.profile
+  );
+
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
-  const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatarUrl || null);
   const fileInputRef = useRef(null);
 
-  const handleImageUpload = (event) => {
+  useEffect(() => {
+    if (currentUser?.id) {
+      dispatch({ type: 'FETCH_PROFILE_START' });
+      
+      fetch(`/api/users/${currentUser.id}/profile`)
+        .then(res => res.json())
+        .then(data => {
+          dispatch({ type: 'FETCH_PROFILE_SUCCESS', payload: data });
+        })
+        .catch(error => {
+          dispatch({ type: 'FETCH_PROFILE_ERROR', payload: error.message });
+        });
+    }
+  }, [currentUser?.id, dispatch]);
+
+  const handleImageUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarUrl(reader.result);
-        // Here you would typically upload the image to your server
-      };
-      reader.readAsDataURL(file);
+      try {
+        const formData = new FormData();
+        formData.append('avatar', file);
+
+        const response = await fetch(`/api/users/${currentUser.id}/avatar`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        dispatch({ type: 'UPDATE_AVATAR', payload: data.avatarUrl });
+      } catch (error) {
+        console.error('Error uploading avatar:', error);
+      }
     }
   };
 
-  const stats = [
-    { title: "Total Projects", value: "12", icon: FiFolder, change: 20 },
-    { title: "GPU Hours", value: "324", icon: FiCpu, change: 15 },
-    { title: "Contributions", value: "156", icon: FiActivity, change: -5 },
-    { title: "Team Members", value: "8", icon: FiUsers, change: 10 },
-    { title: "Certificates", value: "5", icon: FiAward },
-    { title: "Experience", value: "4y", icon: FiBriefcase },
-  ];
+  if (loading) {
+    return (
+      <div className={`min-h-screen ${theme.background} flex items-center justify-center`}>
+        <div className="text-white">Loading profile...</div>
+      </div>
+    );
+  }
 
-  const projects = [
-    {
-      name: "Neural Network Accelerator",
-      description:
-        "High-performance GPU-accelerated deep learning framework with multi-node support",
-      status: "Active",
-      featured: true,
-      technologies: ["CUDA", "Python", "TensorFlow", "Docker"],
-      team: ["John", "Alice", "Bob", "Sarah"],
-      lastUpdated: "2 days ago",
-      stars: 128,
-      commits: 456,
-    },
-    {
-      name: "Quantum Simulator",
-      description:
-        "Massively parallel quantum circuit simulator with GPU optimization",
-      status: "In Progress",
-      technologies: ["C++", "OpenCL", "CUDA", "Python"],
-      team: ["Sarah", "Mike"],
-      lastUpdated: "1 week ago",
-      stars: 89,
-      commits: 234,
-    },
-  ];
-
-  const activities = [
-    {
-      icon: FiCode,
-      description: "Pushed 23 commits to Neural Network Accelerator",
-      time: "2 hours ago",
-    },
-    {
-      icon: FiCpu,
-      description: "Started new GPU instance for batch processing",
-      time: "5 hours ago",
-    },
-    {
-      icon: FiTrello,
-      description: "Created new project board for Quantum Simulator",
-      time: "1 day ago",
-    },
-    {
-      icon: FiCheckCircle,
-      description: "Completed CUDA Optimization milestone",
-      time: "2 days ago",
-    },
-  ];
-
-  const skills = [
-    { name: "CUDA Programming", level: 95 },
-    { name: "Python", level: 90 },
-    { name: "Deep Learning", level: 85 },
-    { name: "C++", level: 80 },
-    { name: "OpenCL", level: 75 },
-  ];
+  if (error) {
+    return (
+      <div className={`min-h-screen ${theme.background} flex items-center justify-center`}>
+        <div className="text-red-400">Error loading profile: {error}</div>
+      </div>
+    );
+  }
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -268,10 +222,8 @@ export default function Profile() {
         return (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-2 space-y-6">
-              <h2 className="text-2xl font-bold text-white">
-                Featured Projects
-              </h2>
-              {projects.map((project, index) => (
+              <h2 className="text-2xl font-bold text-white">Featured Projects</h2>
+              {projects.filter(p => p.featured).map((project, index) => (
                 <ProjectCard key={index} project={project} />
               ))}
             </div>
@@ -288,7 +240,7 @@ export default function Profile() {
       case "projects":
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[...projects, ...projects].map((project, index) => (
+            {projects.map((project, index) => (
               <ProjectCard key={index} project={project} />
             ))}
           </div>
@@ -328,9 +280,9 @@ export default function Profile() {
                     flex items-center justify-center text-4xl text-white
                     border-4 border-gray-800 overflow-hidden`}
                 >
-                  {avatarUrl ? (
+                  {currentUser?.avatarUrl ? (
                     <img
-                      src={avatarUrl}
+                      src={currentUser.avatarUrl}
                       alt="Profile"
                       className="w-full h-full object-cover"
                     />
@@ -361,12 +313,12 @@ export default function Profile() {
                   {currentUser?.username}
                 </h1>
                 <p className="text-gray-400 mb-4">
-                  Senior GPU Developer & ML Engineer
+                  {currentUser?.title || "Senior GPU Developer & ML Engineer"}
                 </p>
                 <div className="flex flex-wrap gap-4 justify-center md:justify-start">
                   <div className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors">
                     <FiMapPin />
-                    <span>San Francisco, CA</span>
+                    <span>{currentUser?.location || "San Francisco, CA"}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors">
                     <FiMail />
@@ -374,19 +326,17 @@ export default function Profile() {
                   </div>
                 </div>
                 <div className="flex gap-4 mt-4 justify-center md:justify-start">
-                  {[FiGithub, FiLinkedin, FiTwitter, FiGlobe].map(
-                    (Icon, index) => (
-                      <motion.a
-                        key={index}
-                        whileHover={{ scale: 1.1 }}
-                        className="p-2 rounded-lg bg-gray-800 text-blue-400
+                  {[FiGithub, FiLinkedin, FiTwitter, FiGlobe].map((Icon, index) => (
+                    <motion.a
+                      key={index}
+                      whileHover={{ scale: 1.1 }}
+                      className="p-2 rounded-lg bg-gray-800 text-blue-400
                         hover:bg-blue-500 hover:text-white transition-colors"
-                        href="#"
-                      >
-                        <Icon />
-                      </motion.a>
-                    )
-                  )}
+                      href="#"
+                    >
+                      <Icon />
+                    </motion.a>
+                  ))}
                 </div>
               </div>
 
@@ -451,6 +401,75 @@ export default function Profile() {
             >
               {renderTabContent()}
             </motion.div>
+          </AnimatePresence>
+
+          {/* Edit Profile Modal */}
+          <AnimatePresence>
+            {isEditing && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center"
+                onClick={() => setIsEditing(false)}
+              >
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  className={`${theme.panel} rounded-xl p-8 max-w-2xl w-full mx-4`}
+                  onClick={e => e.stopPropagation()}
+                >
+                  <h2 className="text-2xl font-bold text-white mb-6">Edit Profile</h2>
+                  {/* Add your edit profile form here */}
+                  <div className="space-y-4">
+                    {/* Example form fields */}
+                    <div>
+                      <label className="text-gray-400 block mb-2">Username</label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700"
+                        defaultValue={currentUser?.username}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-gray-400 block mb-2">Title</label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700"
+                        defaultValue={currentUser?.title}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-gray-400 block mb-2">Location</label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700"
+                        defaultValue={currentUser?.location}
+                      />
+                    </div>
+                    <div className="flex justify-end gap-4 mt-6">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setIsEditing(false)}
+                        className="px-6 py-2 rounded-lg bg-gray-800 text-gray-400"
+                      >
+                        Cancel
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`px-6 py-2 rounded-lg bg-gradient-to-r ${theme.buttonGradient} 
+                          text-white font-medium`}
+                      >
+                        Save Changes
+                      </motion.button>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
       </div>

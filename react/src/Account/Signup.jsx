@@ -3,13 +3,11 @@ import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useTheme } from "../Home/ThemeContext";
-import { setCurrentUser } from "./accountReducer";
-import { processPayment } from "./client";
 import Navbar from "../Navbar";
 import Starfield from "../Home/Starfield";
 import MatrixBackground from "../Home/MatrixBackground";
 import CircuitBackground from "../Home/CircuitBackground";
-import { FaCreditCard, FaLock } from 'react-icons/fa';
+import { FaCreditCard, FaLock, FaRocket } from 'react-icons/fa';
 
 const steps = [
   {
@@ -145,11 +143,14 @@ export default function Signup() {
     
     try {
       if (formData.plan === "Enterprise") {
-        // Process payment first
-        const paymentResult = await processPayment({
-          cardNumber: formData.cardNumber,
-          expiryDate: formData.expiryDate,
-          cvv: formData.cvv
+        dispatch({ type: 'PAYMENT_START' });
+        const paymentResult = await dispatch({ 
+          type: 'PROCESS_PAYMENT', 
+          payload: {
+            cardNumber: formData.cardNumber,
+            expiryDate: formData.expiryDate,
+            cvv: formData.cvv
+          }
         });
         
         if (!paymentResult.success) {
@@ -157,16 +158,29 @@ export default function Signup() {
         }
       }
       
+      dispatch({ type: 'SIGNUP_START' });
+      
       // Create account
-      dispatch(setCurrentUser({
-        id: "1",
-        username: formData.username,
-        email: formData.email,
-        plan: formData.plan
-      }));
-      navigate("/dashboard");
+      const signupResult = await dispatch({
+        type: 'SIGNUP_USER',
+        payload: {
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          plan: formData.plan
+        }
+      });
+
+      if (signupResult.success) {
+        dispatch({ type: 'SIGNUP_SUCCESS', payload: signupResult.user });
+        navigate("/dashboard");
+      } else {
+        throw new Error(signupResult.error || "Signup failed");
+      }
     } catch (err) {
+      dispatch({ type: 'SIGNUP_ERROR', payload: err.message });
       setError(err.message);
+    } finally {
       setLoading(false);
     }
   };

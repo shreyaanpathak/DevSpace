@@ -1,11 +1,11 @@
-// src/Navbar/index.jsx
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "../Home/ThemeContext";
 import { FiMenu, FiX, FiUser } from "react-icons/fi";
 import { useSelector, useDispatch } from "react-redux";
-import { logout } from "../Account/accountReducer";
+import { setCurrentUser } from "../Account/accountReducer";
+import * as client from "../Account/client";
 
 const NavLink = ({ to, children, onClick }) => {
   const { theme } = useTheme();
@@ -31,13 +31,19 @@ const NavLink = ({ to, children, onClick }) => {
 const Navbar = () => {
   const { theme, setTheme, themes } = useTheme();
   const dispatch = useDispatch();
-  const { currentUser } = useSelector((state) => state.accountReducer);
+  const currentUser = useSelector((state) => state.account?.currentUser ?? null);
   const [isOpen, setIsOpen] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
-  const handleLogout = () => {
-    dispatch(logout());
-    setShowProfileMenu(false);
+  const handleLogout = async () => {
+    try {
+      await client.signout();
+      dispatch(setCurrentUser(null));
+      setShowProfileMenu(false);
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Optionally handle error feedback to user
+    }
   };
 
   return (
