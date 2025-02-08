@@ -11,6 +11,7 @@ import Signin from './Account/Signin';
 import Signup from './Account/Signup';
 import Profile from './Account/Profile';
 import ProtectedRoute from './Account/ProtectedRoute';
+import Codespace from './Codespace';
 
 function App() {
   const dispatch = useDispatch();
@@ -50,9 +51,10 @@ function App() {
             }
           />
           <Route caseSensitive={false}
-            path="/DevSpace"
+            path="/Devspaces"
             element={
               <ProtectedRoute>
+              <Codespace/>
               </ProtectedRoute>
             }
           />
