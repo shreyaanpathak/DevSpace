@@ -3,6 +3,9 @@ package org.tilakpatellshreyaan.devspacebackend.controller;
 import org.springframework.http.ResponseEntity;
 import org.tilakpatellshreyaan.devspacebackend.model.CodeRepository;
 import org.tilakpatellshreyaan.devspacebackend.repository.CodeRepositoryRepository;
+
+import jakarta.servlet.http.HttpSession;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
@@ -14,18 +17,23 @@ import java.util.Optional;
 @RequestMapping("/api/repositories")
 public class CodeRepositoryController {
   private final CodeRepositoryRepository repositoryRepo;
-  private final UserService userService; // Add this
+  private final HttpSession httpSession; // Add this instead of UserService
 
-  public CodeRepositoryController(CodeRepositoryRepository repositoryRepo, UserService userService) {
+  public CodeRepositoryController(CodeRepositoryRepository repositoryRepo, HttpSession httpSession) {
     this.repositoryRepo = repositoryRepo;
-    this.userService = userService;
+    this.httpSession = httpSession;
   }
 
-  // Add this new endpoint to get repositories accessible by the current user
+  // Modified endpoint to get repositories accessible by the current user
   @GetMapping("/accessible")
   public ResponseEntity<?> getAccessibleRepositories() {
     try {
-      String currentUserId = userService.getCurrentUserId();
+      String currentUserId = (String) httpSession.getAttribute("userId");
+      if (currentUserId == null) {
+        return ResponseEntity.status(401)
+                .body(Map.of("error", "No active session"));
+      }
+      
       List<CodeRepository> repositories = repositoryRepo.findByCreatorIdOrCollaboratorIdsContaining(
               currentUserId,
               currentUserId
@@ -36,7 +44,6 @@ public class CodeRepositoryController {
               .body(Map.of("error", "Failed to fetch accessible repositories"));
     }
   }
-
   // Add this endpoint to get user's repositories
   @GetMapping("/user/{userId}")
   public ResponseEntity<?> getUserRepositories(@PathVariable String userId) {
