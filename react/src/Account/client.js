@@ -1,5 +1,28 @@
 import { api } from '../api/config';
 
+export const checkSession = async () => {
+  try {
+    const response = await api.get("/auth/check-session");
+    console.log('Check session response:', response.data);
+    return response.data?.user || null;
+  } catch (error) {
+    console.error("Session check error:", error);
+    return null;
+  }
+};
+
+export const profile = async (userId) => {
+  try {
+    console.log('Fetching profile for userId:', userId);
+    const response = await api.get(`/auth/profile/${userId}`);
+    console.log('Profile response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch profile:", error);
+    throw error;
+  }
+};
+
 export const signin = async (credentials) => {
   try {
     const response = await api.post("/auth/signin", credentials);
@@ -18,81 +41,6 @@ export const signout = async () => {
     return response.data;
   } catch (error) {
     console.error("Signout error:", error);
-    throw error;
-  }
-};
-
-export const checkSession = async () => {
-  try {
-    const response = await api.get("/auth/check-session");
-    return response.data;
-  } catch (error) {
-    return null;
-  }
-};
-
-export const profile = async (userId) => {
-  try {
-    const response = await api.get(`/auth/profile/${userId}`);
-    return response.data;
-  } catch (error) {
-    console.error("Failed to fetch profile:", error);
-    throw error;
-  }
-};
-
-export const updateProfile = async (userId, updatedData) => {
-  try {
-    const response = await api.put(`/auth/profile/${userId}`, updatedData);
-    return response.data;
-  } catch (error) {
-    console.error("Failed to update profile:", error);
-    throw error;
-  }
-};
-
-export const uploadProfileImage = async (userId, file) => {
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    const response = await api.post(`/auth/profile/${userId}/image`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Failed to upload image:", error);
-    throw error;
-  }
-};
-
-export const getUsers = async (page = 1, search) => {
-  try {
-    const skip = (page - 1) * 20;
-    const params = new URLSearchParams({
-      skip: skip.toString(),
-      limit: '20'
-    });
-    if (search) params.append('search', search);
-    
-    const response = await api.get(`/auth/users?${params}`);
-    return response.data;
-  } catch (error) {
-    console.error("Failed to fetch users:", error);
-    throw error;
-  }
-};
-
-export const updateProfilePicture = async (userId, imageUrl) => {
-  try {
-    const response = await api.put(`/auth/profile/${userId}/update-picture`, {
-      profile_picture: imageUrl
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Failed to update profile picture:', error);
     throw error;
   }
 };

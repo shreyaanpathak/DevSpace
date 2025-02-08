@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useTheme } from "../Home/ThemeContext";
-import { setCurrentUser } from "./accountReducer";
+import { setCurrentUser, setError, setLoading } from "./accountReducer";
+import { checkSession, signin } from "./client";
 import Navbar from "../Navbar";
 import Starfield from "../Home/Starfield";
 import MatrixBackground from "../Home/MatrixBackground";
@@ -13,28 +14,41 @@ export default function Signin() {
   const { theme } = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+
+  // ✅ Ensure Redux state is handled safely
+  const { loading = false, error = null, currentUser = null } = useSelector((state) => state.account || {});
+
   const [credentials, setCredentials] = useState({ username: "", password: "" });
 
+  useEffect(() => {
+    async function verifySession() {
+      dispatch(setLoading(true));
+      const sessionData = await checkSession();
+
+      if (sessionData && sessionData.user) {
+        dispatch(setCurrentUser(sessionData.user));
+        navigate("/profile"); 
+      } else {
+        dispatch(setLoading(false)); 
+      }
+    }
+
+    verifySession();
+  }, [dispatch, navigate]);
+
+  // ✅ Handle Sign-in
   const handleSignin = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
+    dispatch(setLoading(true));
+    dispatch(setError(null));
 
-    setTimeout(() => {
-      if (credentials.username === "test" && credentials.password === "test") {
-        dispatch(setCurrentUser({
-          id: "1",
-          username: "test",
-          email: "test@example.com"
-        }));
-        navigate("/Profile");
-      } else {
-        setError("Invalid credentials. Try username: test, password: test");
-      }
-      setLoading(false);
-    }, 1000);
+    try {
+      const user = await signin(credentials);
+      dispatch(setCurrentUser(user));
+      navigate("/profile");
+    } catch (err) {
+      dispatch(setError(err.message));
+    }
   };
 
   return (

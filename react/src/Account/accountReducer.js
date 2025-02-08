@@ -4,6 +4,7 @@ const initialState = {
   currentUser: null,
   loading: false,
   error: null,
+  profile: null,
   sessionChecked: false
 };
 
@@ -13,9 +14,9 @@ const accountSlice = createSlice({
   reducers: {
     setCurrentUser: (state, action) => {
       state.currentUser = action.payload;
-      state.error = null;
-      state.loading = false;
-      state.sessionChecked = true;
+    },
+    setProfile: (state, action) => {
+      state.profile = action.payload;
     },
     setError: (state, action) => {
       state.error = action.payload;
@@ -23,9 +24,19 @@ const accountSlice = createSlice({
     },
     setLoading: (state, action) => {
       state.loading = action.payload;
+    },
+    setSessionChecked: (state, action) => {
+      state.sessionChecked = action.payload;
     }
   },
 });
 
-export const { setCurrentUser, setError, setLoading } = accountSlice.actions;
+export const { 
+  setCurrentUser, 
+  setProfile, 
+  setError, 
+  setLoading,
+  setSessionChecked 
+} = accountSlice.actions;
+
 export default accountSlice.reducer;

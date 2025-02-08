@@ -1,12 +1,13 @@
 import { filesApi } from '../api/files';
 
-// Action Types
-const SET_FILE = 'file/SET_FILE';
-const SET_REPOSITORY_FILES = 'file/SET_REPOSITORY_FILES';
-const SET_FILE_LOADING = 'file/SET_FILE_LOADING';
-const SET_FILE_ERROR = 'file/SET_FILE_ERROR';
+// Action Types - keep for compatibility
+export const SET_FILE = 'file/SET_FILE';
+export const SET_REPOSITORY_FILES = 'file/SET_REPOSITORY_FILES';
+export const SET_FILE_LOADING = 'file/SET_FILE_LOADING';
+export const SET_FILE_ERROR = 'file/SET_FILE_ERROR';
+export const UPDATE_FILE = 'file/UPDATE_FILE';
+export const ADD_FILE = 'file/ADD_FILE';
 
-// Initial State
 const initialState = {
   currentFile: null,
   repositoryFiles: [],
@@ -14,40 +15,82 @@ const initialState = {
   error: null
 };
 
+// Action Creators
+export const actions = {
+  setFile: (payload) => ({ type: SET_FILE, payload }),
+  setRepositoryFiles: (payload) => ({ type: SET_REPOSITORY_FILES, payload }),
+  setFileLoading: (payload) => ({ type: SET_FILE_LOADING, payload }),
+  setFileError: (payload) => ({ type: SET_FILE_ERROR, payload }),
+  updateFile: (payload) => ({ type: UPDATE_FILE, payload }),
+  addFile: (payload) => ({ type: ADD_FILE, payload })
+};
+
 // Reducer
 export default function fileReducer(state = initialState, action) {
   switch (action.type) {
     case SET_FILE:
-      return { ...state, currentFile: action.payload, error: null };
+      return { 
+        ...state, 
+        currentFile: action.payload, 
+        error: null 
+      };
     case SET_REPOSITORY_FILES:
-      return { ...state, repositoryFiles: action.payload, error: null };
+      return { 
+        ...state, 
+        repositoryFiles: action.payload, 
+        error: null 
+      };
     case SET_FILE_LOADING:
-      return { ...state, loading: action.payload };
+      return { 
+        ...state, 
+        loading: action.payload 
+      };
     case SET_FILE_ERROR:
-      return { ...state, error: action.payload, loading: false };
+      return { 
+        ...state, 
+        error: action.payload, 
+        loading: false 
+      };
+    case UPDATE_FILE:
+      return {
+        ...state,
+        repositoryFiles: state.repositoryFiles.map(file =>
+          file.id === action.payload.id ? action.payload : file
+        ),
+        currentFile: state.currentFile?.id === action.payload.id ? 
+          action.payload : state.currentFile
+      };
+    case ADD_FILE:
+      return {
+        ...state,
+        repositoryFiles: [...state.repositoryFiles, action.payload]
+      };
     default:
       return state;
   }
 }
 
-// Action Creators
+// API Action Helpers
 export const fetchFile = (fileId) => async (dispatch) => {
-  dispatch({ type: SET_FILE_LOADING, payload: true });
+  dispatch(actions.setFileLoading(true));
   try {
     const data = await filesApi.getFileById(fileId);
-    dispatch({ type: SET_FILE, payload: data });
+    dispatch(actions.setFile(data));
   } catch (error) {
-    dispatch({ type: SET_FILE_ERROR, payload: error.message });
+    dispatch(actions.setFileError(error.message));
   } finally {
-    dispatch({ type: SET_FILE_LOADING, payload: false });
+    dispatch(actions.setFileLoading(false));
   }
 };
 
 export const fetchRepositoryFiles = (repoId) => async (dispatch) => {
+  dispatch(actions.setFileLoading(true));
   try {
     const data = await filesApi.getFilesByRepository(repoId);
-    dispatch({ type: SET_REPOSITORY_FILES, payload: data });
+    dispatch(actions.setRepositoryFiles(data));
   } catch (error) {
-    dispatch({ type: SET_FILE_ERROR, payload: error.message });
+    dispatch(actions.setFileError(error.message));
+  } finally {
+    dispatch(actions.setFileLoading(false));
   }
 };

@@ -1,48 +1,66 @@
 package org.tilakpatellshreyaan.devspacebackend.controller;
 
+import org.springframework.http.ResponseEntity;
 import org.tilakpatellshreyaan.devspacebackend.model.FileData;
 import org.tilakpatellshreyaan.devspacebackend.repository.FileDataRepository;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/files")
 public class FileController {
-
   private final FileDataRepository fileRepository;
 
   public FileController(FileDataRepository fileRepository) {
     this.fileRepository = fileRepository;
   }
 
-  // Get file by ID
   @GetMapping("/{fileId}")
-  public Optional<FileData> getFileById(@PathVariable String fileId) {
-    return fileRepository.findById(fileId);
+  public ResponseEntity<?> getFileById(@PathVariable String fileId) {
+    Optional<FileData> fileOpt = fileRepository.findById(fileId);
+    if (fileOpt.isPresent()) {
+      return ResponseEntity.ok(fileOpt.get());
+    } else {
+      return ResponseEntity.status(404).body(Map.of("error", "File not found"));
+    }
   }
 
-  // Get all files in a repository
   @GetMapping("/repositories/{repoId}/files")
-  public List<FileData> getFilesByRepository(@PathVariable String repoId) {
-    return fileRepository.findByRepositoryId(repoId);
+  public ResponseEntity<?> getFilesByRepository(@PathVariable String repoId) {
+    List<FileData> files = fileRepository.findByRepositoryId(repoId);
+    if (!files.isEmpty()) {
+      return ResponseEntity.ok(files);
+    } else {
+      return ResponseEntity.ok(Collections.emptyList());
+    }
   }
 
-  // Upload a new file
   @PostMapping
-  public FileData uploadFile(@RequestBody FileData file) {
-    return fileRepository.save(file);
+  public ResponseEntity<?> uploadFile(@RequestBody FileData file) {
+    try {
+      FileData savedFile = fileRepository.save(file);
+      return ResponseEntity.ok(savedFile);
+    } catch (Exception e) {
+      return ResponseEntity.status(500).body(Map.of("error", "Failed to upload file"));
+    }
   }
 
-  // Update a file
   @PutMapping("/{fileId}")
-  public Optional<FileData> updateFile(@PathVariable String fileId, @RequestBody FileData updatedFile) {
-    return fileRepository.findById(fileId).map(existingFile -> {
-      existingFile.setFilename(updatedFile.getFilename());
-      existingFile.setLanguage(updatedFile.getLanguage());
-      existingFile.setContent(updatedFile.getContent());
-      return fileRepository.save(existingFile);
-    });
+  public ResponseEntity<?> updateFile(@PathVariable String fileId, @RequestBody FileData updatedFile) {
+    Optional<FileData> fileOpt = fileRepository.findById(fileId);
+    if (fileOpt.isPresent()) {
+      FileData file = fileOpt.get();
+      file.setFilename(updatedFile.getFilename());
+      file.setLanguage(updatedFile.getLanguage());
+      file.setContent(updatedFile.getContent());
+      fileRepository.save(file);
+      return ResponseEntity.ok(file);
+    } else {
+      return ResponseEntity.status(404).body(Map.of("error", "File not found"));
+    }
   }
 }

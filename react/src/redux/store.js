@@ -6,10 +6,10 @@ import fileReducer from './fileSlice';
 
 const store = configureStore({
   reducer: {
-    accountReducer,
-    userReducer,
-    repositoryReducer,
-    fileReducer
+    account: accountReducer,
+    user: userReducer,
+    repository: repositoryReducer,
+    file: fileReducer
   }
 });
 

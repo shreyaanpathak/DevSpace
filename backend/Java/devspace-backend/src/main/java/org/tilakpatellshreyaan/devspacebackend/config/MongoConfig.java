@@ -9,6 +9,6 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 public class MongoConfig {
   @Bean
   public MongoTemplate mongoTemplate() {
-    return new MongoTemplate(MongoClients.create("mongodb://localhost:27017"), "devspaceDb");
+    return new MongoTemplate(MongoClients.create("mongodb://localhost:27017"), "devspaces");
   }
 }

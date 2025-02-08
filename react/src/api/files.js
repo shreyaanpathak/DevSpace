@@ -1,7 +1,6 @@
 import { api } from './config';
 
 export const filesApi = {
-  // Get file by ID
   getFileById: async (fileId) => {
     try {
       const response = await api.get(`/files/${fileId}`);
@@ -11,30 +10,27 @@ export const filesApi = {
     }
   },
 
-  // Get files by repository ID
   getFilesByRepository: async (repoId) => {
     try {
-      const response = await api.get(`/repositories/${repoId}/files`);
+      const response = await api.get(`/files/repositories/${repoId}/files`);
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to fetch repository files');
     }
   },
 
-  // Create new file
-  createFile: async (fileData) => {
+  uploadFile: async (fileData) => {
     try {
       const response = await api.post('/files', fileData);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to create file');
+      throw new Error(error.response?.data?.message || 'Failed to upload file');
     }
   },
 
-  // Update file content
-  updateFile: async (fileId, content) => {
+  updateFile: async (fileId, updatedFile) => {
     try {
-      const response = await api.put(`/files/${fileId}`, { content });
+      const response = await api.put(`/files/${fileId}`, updatedFile);
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to update file');

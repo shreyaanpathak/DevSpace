@@ -1,69 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../Home/ThemeContext";
-import Navbar from "../Navbar";
 import * as monaco from "monaco-editor";
-import { FaFile, FaFolder, FaUser, FaCode, FaTerminal, FaRobot, FaPlay, FaStop } from "react-icons/fa";
+import { FaCode } from "react-icons/fa";
 
-const CodeEditor = () => {
+const CodeEditor = ({ currentFile, onFileUpdate }) => {
     const editorRef = useRef(null);
+    const monacoRef = useRef(null);
     const { theme } = useTheme();
     const [isLoading, setIsLoading] = useState(true);
-    const [activeFile, setActiveFile] = useState(null);
-    const [openFiles, setOpenFiles] = useState([
-      {
-        name: 'main.py',
-        language: 'python',
-        content: `import torch
-  import numpy as np
-  
-  def main():
-      device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-      print(f"Using device: {device}")
-      
-  if __name__ == "__main__":
-      main()`
-      },
-      {
-        name: 'kernel.cu',
-        language: 'cuda',
-        content: `__global__ void vectorAdd(float *a, float *b, float *c, int n) {
-      int i = blockDim.x * blockIdx.x + threadIdx.x;
-      if (i < n) {
-          c[i] = a[i] + b[i];
-      }
-  }`
-      },
-      {
-        name: 'utils.cpp',
-        language: 'cpp',
-        content: `#include <iostream>
-  
-  void processData(float* data, size_t size) {
-      for(size_t i = 0; i < size; ++i) {
-          data[i] *= 2.0f;
-      }
-  }`
-      }
-    ]);
-    const [editor, setEditor] = useState(null);
-  
-    const handleFileClose = (fileToClose) => {
-      const newFiles = openFiles.filter(f => f.name !== fileToClose.name);
-      setOpenFiles(newFiles);
-  
-      if (activeFile?.name === fileToClose.name) {
-        if (newFiles.length > 0) {
-          setActiveFile(newFiles[0]);
-        } else {
-          setActiveFile(null);
-        }
-      }
-    };
-  
+
     // Update theme when it changes
     useEffect(() => {
-      if (!editor) return;
+      if (!monacoRef.current) return;
   
       monaco.editor.defineTheme("custom-theme", {
         base: "vs-dark",
@@ -88,12 +37,12 @@ const CodeEditor = () => {
       });
   
       monaco.editor.setTheme("custom-theme");
-    }, [theme, editor]);
-  
+    }, [theme]);
+
     // Initialize editor and languages
     useEffect(() => {
       if (!editorRef.current) return;
-  
+
       // Register CUDA language
       if (!monaco.languages.getLanguages().some(lang => lang.id === 'cuda')) {
         monaco.languages.register({ id: 'cuda' });
@@ -118,101 +67,85 @@ const CodeEditor = () => {
           }
         });
       }
-  
-      // Set initial active file
-      if (!activeFile && openFiles.length > 0) {
-        setActiveFile(openFiles[0]);
-      }
-  
-      // Create editor instance
-      const editorInstance = monaco.editor.create(editorRef.current, {
-        value: activeFile?.content || '',
-        language: activeFile?.language || 'plaintext',
-        theme: 'custom-theme',
-        automaticLayout: true,
-        fontSize: 14,
-        minimap: { enabled: true },
-        scrollBeyondLastLine: false,
-        wordWrap: 'on',
-        roundedSelection: true,
-        padding: { top: 20 },
-        smoothScrolling: true,
-        cursorSmoothCaretAnimation: true,
-        cursorBlinking: 'smooth',
-        backgroundColor: theme.monacoBackground,
-      });
-  
-      setEditor(editorInstance);
-      setIsLoading(false);
-  
+
       return () => {
-        editorInstance.dispose();
+        if (monacoRef.current) {
+          monacoRef.current.dispose();
+        }
       };
     }, []);
-  
-    // Update editor content when active file changes
+
+    // Handle editor creation and updates
     useEffect(() => {
-      if (editor && activeFile) {
-        editor.setValue(activeFile.content);
-        monaco.editor.setModelLanguage(editor.getModel(), activeFile.language);
-      }
-    }, [activeFile, editor]);
-  
+      if (!editorRef.current || !currentFile) return;
+
+      const initEditor = async () => {
+        if (monacoRef.current) {
+          monacoRef.current.dispose();
+        }
+
+        const editor = monaco.editor.create(editorRef.current, {
+          value: currentFile.content || '',
+          language: currentFile.language || 'plaintext',
+          theme: 'custom-theme',
+          automaticLayout: true,
+          fontSize: 14,
+          minimap: { enabled: true },
+          scrollBeyondLastLine: false,
+          wordWrap: 'on',
+          roundedSelection: true,
+          padding: { top: 20 },
+          smoothScrolling: true,
+          cursorSmoothCaretAnimation: true,
+          cursorBlinking: 'smooth',
+          scrollbar: {
+            vertical: 'visible',
+            horizontal: 'visible',
+            verticalScrollbarSize: 14,
+            horizontalScrollbarSize: 14,
+            alwaysConsumeMouseWheel: false
+          }
+        });
+
+        monacoRef.current = editor;
+
+        const changeDisposable = editor.onDidChangeModelContent(() => {
+          const content = editor.getValue();
+          if (onFileUpdate && currentFile.id) {
+            onFileUpdate(currentFile.id, content);
+          }
+        });
+
+        const resizeObserver = new ResizeObserver(() => {
+          if (monacoRef.current) {
+            monacoRef.current.layout();
+          }
+        });
+        
+        if (editorRef.current) {
+          resizeObserver.observe(editorRef.current);
+        }
+
+        setIsLoading(false);
+
+        return () => {
+          changeDisposable.dispose();
+          resizeObserver.disconnect();
+        };
+      };
+
+      const timer = setTimeout(initEditor, 100);
+      return () => clearTimeout(timer);
+    }, [currentFile, onFileUpdate]);
+
     const containerStyle = {
       backgroundColor: theme.monacoBackground,
       height: '100%',
       width: '100%',
     };
-  
-    const FileTab = ({ file, isActive, onClick, onClose }) => {
-      return (
-        <motion.div
-          whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
-          className={`flex items-center gap-2 px-4 py-2 cursor-pointer border-r border-white/5
-            ${isActive ? 'bg-white/10' : 'bg-transparent'}`}
-          onClick={onClick}
-        >
-          <div className="flex items-center gap-2">
-            {file.language === 'python' && <FaCode className="text-blue-400 text-sm" />}
-            {file.language === 'cpp' && <FaCode className="text-green-400 text-sm" />}
-            {file.language === 'cuda' && <FaCode className="text-yellow-400 text-sm" />}
-            <span className="text-gray-300 text-sm">{file.name}</span>
-          </div>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className="ml-2 text-gray-500 hover:text-gray-300"
-            onClick={(e) => {
-              e.stopPropagation();
-              onClose(file);
-            }}
-          >
-            ×
-          </motion.button>
-        </motion.div>
-      );
-    };
-  
+
     return (
       <div className="flex flex-col h-full" style={containerStyle}>
-        {/* File tabs */}
-        <motion.div 
-          className={`flex border-b border-white/5 overflow-x-auto`}
-          style={{ backgroundColor: theme.monacoBackground }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          {openFiles.map(file => (
-            <FileTab
-              key={file.name}
-              file={file}
-              isActive={activeFile?.name === file.name}
-              onClick={() => setActiveFile(file)}
-              onClose={handleFileClose}
-            />
-          ))}
-        </motion.div>
-        
         {/* Editor container */}
         <motion.div 
           initial={{ opacity: 0 }}
@@ -247,6 +180,6 @@ const CodeEditor = () => {
         </motion.div>
       </div>
     );
-  };
-  
-  export default CodeEditor;
+};
+
+export default CodeEditor;

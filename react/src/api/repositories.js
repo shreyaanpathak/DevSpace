@@ -1,7 +1,6 @@
 import { api } from './config';
 
 export const repositoriesApi = {
-  // Get repository by ID
   getRepositoryById: async (repoId) => {
     try {
       const response = await api.get(`/repositories/${repoId}`);
@@ -11,20 +10,27 @@ export const repositoriesApi = {
     }
   },
 
-  // Get repository collaborators
   getRepositoryCollaborators: async (repoId) => {
     try {
       const response = await api.get(`/repositories/${repoId}/collaborators`);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch repository collaborators');
+      throw new Error(error.response?.data?.message || 'Failed to fetch collaborators');
     }
   },
 
-  // Create new repository
-  createRepository: async (repositoryData) => {
+  getAccessibleRepositories: async () => {
     try {
-      const response = await api.post('/repositories', repositoryData);
+      const response = await api.get('/repositories/accessible');
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch accessible repositories');
+    }
+  },
+
+  createRepository: async (repository) => {
+    try {
+      const response = await api.post('/repositories', repository);
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to create repository');
