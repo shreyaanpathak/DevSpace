@@ -141,7 +141,7 @@ const Home = () => {
                 <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
               </Link>
               <motion.a
-                href="https://github.com"
+                href="https://github.com/shreyaanpathak/DevSpace"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`px-8 py-4 ${theme.glass} rounded-lg text-gray-300 
