@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
+import { useTheme } from "./ThemeContext";
 
 const FakeTerminal = () => {
+  const { theme } = useTheme();
   const [displayedText, setDisplayedText] = useState("");
 
   // Lines to type and then delete
@@ -18,12 +20,12 @@ const FakeTerminal = () => {
   useEffect(() => {
     let lineIndex = 0;
     let charIndex = 0;
-    let isDeleting = false; // tracks whether we are currently deleting text
+    let isDeleting = false; 
+    let timer;
 
-    // Recursive function to handle typing & deleting
     const typeAndDelete = () => {
       const currentLine = fullText[lineIndex];
-      let updatedText = currentLine.slice(0, charIndex);
+      const updatedText = currentLine.slice(0, charIndex);
 
       setDisplayedText(updatedText);
 
@@ -31,40 +33,44 @@ const FakeTerminal = () => {
         // Typing forward
         if (charIndex < currentLine.length) {
           charIndex++;
-          setTimeout(typeAndDelete, typingSpeed);
+          timer = setTimeout(typeAndDelete, typingSpeed);
         } else {
-          // Once the line is fully typed, pause briefly before deleting
-          setTimeout(() => {
+          // Once fully typed, pause before deleting
+          timer = setTimeout(() => {
             isDeleting = true;
-            setTimeout(typeAndDelete, deletingSpeed);
+            typeAndDelete();
           }, linePause);
         }
       } else {
         // Deleting backward
         if (charIndex > 0) {
           charIndex--;
-          setTimeout(typeAndDelete, deletingSpeed);
+          timer = setTimeout(typeAndDelete, deletingSpeed);
         } else {
-          // Line fully deleted
+          // Move on to the next line
           lineIndex++;
           isDeleting = false;
-          if (lineIndex < fullText.length) {
-            // Move on to the next line after a brief pause
-            setTimeout(typeAndDelete, typingSpeed);
+
+          // If we've typed all lines, start over
+          if (lineIndex >= fullText.length) {
+            lineIndex = 0;
           }
+          timer = setTimeout(typeAndDelete, typingSpeed);
         }
       }
     };
 
     typeAndDelete();
+
+    // Cleanup in case the component unmounts
+    return () => clearTimeout(timer);
   }, []);
 
   return (
     <div
-      className="
-        bg-white/10
-        backdrop-blur-md
-        text-green-400
+      className={`
+        ${theme.terminalBg}
+        ${theme.text}
         font-mono
         p-4
         rounded-lg
@@ -75,7 +81,8 @@ const FakeTerminal = () => {
         leading-relaxed
         border
         border-white/20
-      "
+        backdrop-blur-md
+      `}
     >
       <pre>{displayedText}</pre>
     </div>

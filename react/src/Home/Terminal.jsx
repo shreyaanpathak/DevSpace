@@ -1,4 +1,3 @@
-// src/components/Terminal.jsx
 import { useEffect, useRef } from "react";
 import * as monaco from "monaco-editor";
 import { useTheme } from "./ThemeContext";
@@ -10,9 +9,7 @@ const Terminal = () => {
   useEffect(() => {
     if (!editorRef.current) return;
 
-    // Define a custom Monaco theme based on the current theme's color codes
     monaco.editor.defineTheme("custom-theme", {
-      // If you want a light base for some themes, swap logic or remove if all are dark by default
       base: theme.name === "Monochrome" ? "vs" : "vs-dark",
       inherit: true,
       rules: [

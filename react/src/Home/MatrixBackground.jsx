@@ -1,4 +1,3 @@
-// src/components/MatrixBackground.jsx
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { useTheme } from './ThemeContext';

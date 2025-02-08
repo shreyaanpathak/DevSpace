@@ -4,18 +4,14 @@ import { Link } from "react-router-dom";
 import { useTheme } from "../Home/ThemeContext";
 import { FiMenu, FiX } from "react-icons/fi";
 
-/** Reusable NavLink component */
 const NavLink = ({ to, children, onClick }) => {
   const { theme } = useTheme();
 
   return (
-    <motion.div
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-    >
+    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
       <Link
         to={to}
-        onClick={onClick} // optional: close mobile menu on link click
+        onClick={onClick} 
         className={`block px-4 py-2 rounded-lg relative group overflow-hidden
           ${theme.glass} transition-all duration-300`}
       >
@@ -75,11 +71,6 @@ const Navbar = () => {
 
           {/* DESKTOP NAV LINKS */}
           <div className="hidden md:flex items-center space-x-6">
-            <NavLink to="/features">Features</NavLink>
-            <NavLink to="/docs">Documentation</NavLink>
-            <NavLink to="/pricing">Pricing</NavLink>
-            <NavLink to="/community">Community</NavLink>
-
             {/* THEME SELECTOR */}
             <div className="flex items-center gap-2">
               {Object.entries(themes).map(([key, value]) => {
@@ -101,15 +92,13 @@ const Navbar = () => {
                   />
                 );
               })}
+              <NavLink to="/pricing">Pricing</NavLink>
             </div>
 
             {/* LOGIN BUTTON */}
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link
-                to="/login"
+                to="/Signin"
                 className={`px-5 py-2 rounded-lg bg-gradient-to-r ${theme.primary}
                   text-white font-medium hover:opacity-90 transition-opacity`}
               >
@@ -151,17 +140,8 @@ const Navbar = () => {
             `}
           >
             <div className="px-6 space-y-4">
-              <NavLink to="/features" onClick={() => setIsOpen(false)}>
-                Features
-              </NavLink>
-              <NavLink to="/docs" onClick={() => setIsOpen(false)}>
-                Documentation
-              </NavLink>
               <NavLink to="/pricing" onClick={() => setIsOpen(false)}>
                 Pricing
-              </NavLink>
-              <NavLink to="/community" onClick={() => setIsOpen(false)}>
-                Community
               </NavLink>
             </div>
           </motion.div>
