@@ -66,7 +66,7 @@ export const themes = {
     panel: "bg-[#000000]/20 backdrop-blur-xl border border-gray-400/30 hover:border-gray-400/40 transition-all duration-300",
     text: "text-gray-200",
     buttonGradient: "from-gray-200 to-gray-400 hover:from-gray-300 hover:to-gray-500",
-    terminalBg: "bg-[#000000]/90",
+    terminalBg: "bg-[#121212]/90",
     orbColors: ["229,231,235", "156,163,175"],
     animation: "animate-monochrome",
     glow: "shadow-[0_0_20px_rgba(229,231,235,0.3)]",
