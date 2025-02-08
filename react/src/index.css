@@ -1,4 +1,3 @@
-/* src/styles/global.css or wherever you import Tailwind */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 
@@ -151,57 +150,4 @@
 .mockup-code::before {
   content: '';
   @apply absolute inset-0 bg-gradient-to-br from-primary/5 to-purple-500/5 opacity-50;
-}
-
-/* collaboratorsOrbit.css */
-
-/* Container sets up relative positioning */
-.orbit-container {
-  position: relative;
-}
-
-/* Shared class for all orbit avatars */
-.orbit-avatar {
-  animation: orbit 6s linear infinite;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-/* We have 4 mock users. We'll offset each one with nth-child selectors. 
-   The child indices might shift by 1 if you have additional elements in the container. 
-   So watch the index carefully or use a distinct class. 
-*/
-.orbit-avatar:nth-child(2) {
-  /* avatar #1: start at 0deg offset */
-  transform: translate(-50%, -50%) rotate(0deg) translateX(80px) rotate(0deg);
-}
-
-.orbit-avatar:nth-child(3) {
-  /* avatar #2: 90deg offset */
-  transform: translate(-50%, -50%) rotate(90deg) translateX(80px) rotate(-90deg);
-}
-
-.orbit-avatar:nth-child(4) {
-  /* avatar #3: 180deg offset */
-  transform: translate(-50%, -50%) rotate(180deg) translateX(80px) rotate(-180deg);
-}
-
-.orbit-avatar:nth-child(5) {
-  /* avatar #4: 270deg offset */
-  transform: translate(-50%, -50%) rotate(270deg) translateX(80px) rotate(-270deg);
-}
-
-/* Keyframes for the orbit animation:
-   0%   => rotate(0deg), 
-   100% => rotate(360deg)
-   The second "rotate" at the end "unrotates" the avatar so it always faces outward
-*/
-@keyframes orbit {
-  0% {
-    transform: translate(-50%, -50%) rotate(0deg) translateX(80px) rotate(0deg);
-  }
-  100% {
-    transform: translate(-50%, -50%) rotate(360deg) translateX(80px) rotate(-360deg);
-  }
 }
