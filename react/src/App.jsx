@@ -4,6 +4,7 @@ import Home from './Home';         // Public landing page
 import Signin from './Account/Signin';       // Sign In page
 import Signup from './Account/Signup';       // Sign Up page
 import ProtectedRoute from './Account/ProtectedRoute'; // Checks for authentication
+import Codespace from './Codespace';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
             path="/Profile"
             element={
               <ProtectedRoute>
+                <Route path="/Codespace" element={<Codespace/>} />
               </ProtectedRoute>
             }
           />
