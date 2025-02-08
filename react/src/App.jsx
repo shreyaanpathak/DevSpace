@@ -54,6 +54,7 @@ function App() {
             path="/Devspaces"
             element={
               <ProtectedRoute>
+                <Codespace />
               </ProtectedRoute>
             }
           />
