@@ -1,7 +1,7 @@
-package org.tilakshreyaan.devspacebackend.controller;
+package org.tilakpatellshreyaan.devspacebackend.controller;
 
-import org.tilakshreyaan.devspacebackend.model.CodeRepository;
-import org.tilakshreyaan.devspacebackend.repository.CodeRepositoryRepository;
+import org.tilakpatellshreyaan.devspacebackend.model.CodeRepository;
+import org.tilakpatellshreyaan.devspacebackend.repository.CodeRepositoryRepository;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

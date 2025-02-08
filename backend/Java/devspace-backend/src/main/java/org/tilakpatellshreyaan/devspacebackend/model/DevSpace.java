@@ -1,4 +1,4 @@
-package org.tilakshreyaan.devspacebackend.model;
+package org.tilakpatellshreyaan.devspacebackend.model;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -15,7 +15,7 @@ public class DevSpace {
   private String description;
   private String ownerId;  // Added to track owner
   private List<String> collaboratorIds;  // Changed from List<User> to List<String>
-  private List<org.example.devspacebackend.model.FileData> files;
+  private List<org.tilakpatellshreyaan.devspacebackend.model.FileData> files;
   private Date createdAt;  // Added to track creation time
   private Date updatedAt;  // Added to track updates
 }

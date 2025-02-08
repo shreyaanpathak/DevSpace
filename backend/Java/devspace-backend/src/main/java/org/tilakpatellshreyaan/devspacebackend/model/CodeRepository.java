@@ -1,4 +1,4 @@
-package org.tilakshreyaan.devspacebackend.model;
+package org.tilakpatellshreyaan.devspacebackend.model;
 
 import lombok.Data;
 import org.springframework.data.annotation.Id;

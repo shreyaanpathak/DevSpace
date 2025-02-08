@@ -1,6 +1,6 @@
-package org.tilakshreyaan.devspacebackend.repository;
+package org.tilakpatellshreyaan.devspacebackend.repository;
 
-import org.tilakshreyaan.devspacebackend.model.CodeRepository;
+import org.tilakpatellshreyaan.devspacebackend.model.CodeRepository;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.List;
 

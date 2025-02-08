@@ -1,20 +1,17 @@
-package org.tilakshreyaan.devspacebackend.controller;
+package org.tilakpatellshreyaan.devspacebackend.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.tilakshreyaan.devspacebackend.model.Activity;
-import org.tilakshreyaan.devspacebackend.model.Project;
-import org.tilakshreyaan.devspacebackend.model.Stat;
-import org.tilakshreyaan.devspacebackend.model.User;
-import org.tilakshreyaan.devspacebackend.repository.UserRepository;
+import org.tilakpatellshreyaan.devspacebackend.model.Activity;
+import org.tilakpatellshreyaan.devspacebackend.model.Project;
+import org.tilakpatellshreyaan.devspacebackend.model.Stat;
+import org.tilakpatellshreyaan.devspacebackend.model.User;
+import org.tilakpatellshreyaan.devspacebackend.repository.UserRepository;
 
 import java.util.List;
 import java.util.Optional;
-
-import javax.swing.text.html.Option;
 
 @RestController
 @RequestMapping("/api/users")

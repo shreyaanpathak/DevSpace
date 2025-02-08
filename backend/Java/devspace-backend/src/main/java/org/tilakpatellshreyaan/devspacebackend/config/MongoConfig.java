@@ -1,4 +1,4 @@
-package org.tilakshreyaan.devspacebackend.config;
+package org.tilakpatellshreyaan.devspacebackend.config;
 
 import com.mongodb.client.MongoClients;
 import org.springframework.context.annotation.Bean;
