@@ -22,7 +22,6 @@ export default function Signin() {
     setLoading(true);
     setError("");
 
-    // Dummy authentication
     setTimeout(() => {
       if (credentials.username === "test" && credentials.password === "test") {
         dispatch(setCurrentUser({
@@ -30,7 +29,7 @@ export default function Signin() {
           username: "test",
           email: "test@example.com"
         }));
-        navigate("/dashboard");
+        navigate("/Profile");
       } else {
         setError("Invalid credentials. Try username: test, password: test");
       }

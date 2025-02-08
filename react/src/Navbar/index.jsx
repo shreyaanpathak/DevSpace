@@ -1,8 +1,11 @@
+// src/Navbar/index.jsx
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "../Home/ThemeContext";
-import { FiMenu, FiX } from "react-icons/fi";
+import { FiMenu, FiX, FiUser } from "react-icons/fi";
+import { useSelector, useDispatch } from "react-redux";
+import { logout } from "../Account/accountReducer";
 
 const NavLink = ({ to, children, onClick }) => {
   const { theme } = useTheme();
@@ -27,11 +30,18 @@ const NavLink = ({ to, children, onClick }) => {
 
 const Navbar = () => {
   const { theme, setTheme, themes } = useTheme();
+  const dispatch = useDispatch();
+  const { currentUser } = useSelector((state) => state.accountReducer);
   const [isOpen, setIsOpen] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    setShowProfileMenu(false);
+  };
 
   return (
     <>
-      {/* FIXED NAV WRAPPER */}
       <motion.nav
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -46,7 +56,6 @@ const Navbar = () => {
         `}
       >
         <div className="max-w-7xl mx-auto px-6 w-full flex items-center justify-between">
-          {/* LOGO */}
           <Link
             to="/"
             className="flex items-center space-x-2"
@@ -69,9 +78,7 @@ const Navbar = () => {
             </span>
           </Link>
 
-          {/* DESKTOP NAV LINKS */}
           <div className="hidden md:flex items-center space-x-6">
-            {/* THEME SELECTOR */}
             <div className="flex items-center gap-2">
               {Object.entries(themes).map(([key, value]) => {
                 const isActive = theme.name === value.name;
@@ -92,22 +99,63 @@ const Navbar = () => {
                   />
                 );
               })}
-              <NavLink to="/pricing">Pricing</NavLink>
+              {currentUser ? (
+                <NavLink to="/devspaces">DevSpaces</NavLink>
+              ) : (
+                <NavLink to="/pricing">Pricing</NavLink>
+              )}
             </div>
 
-            {/* LOGIN BUTTON */}
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link
-                to="/Signin"
-                className={`px-5 py-2 rounded-lg bg-gradient-to-r ${theme.primary}
-                  text-white font-medium hover:opacity-90 transition-opacity`}
-              >
-                Login
-              </Link>
-            </motion.div>
+            {currentUser ? (
+              <div className="relative">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className={`p-2 rounded-lg ${theme.glass} text-gray-200`}
+                >
+                  <FiUser size={24} />
+                </motion.button>
+
+                <AnimatePresence>
+                  {showProfileMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className={`absolute right-0 mt-2 w-48 rounded-lg ${theme.glass} 
+                        border border-white/10 overflow-hidden`}
+                    >
+                      <Link
+                        to="/profile"
+                        onClick={() => setShowProfileMenu(false)}
+                        className="block px-4 py-2 text-gray-200 hover:bg-white/10"
+                      >
+                        Profile
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 text-gray-200 hover:bg-white/10"
+                      >
+                        Logout
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Link
+                  to="/signin"
+                  className={`px-5 py-2 rounded-lg bg-gradient-to-r ${theme.primary}
+                    text-white font-medium hover:opacity-90 transition-opacity`}
+                >
+                  Login
+                </Link>
+              </motion.div>
+            )}
           </div>
 
-          {/* MOBILE MENU BUTTON */}
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsOpen(!isOpen)}
@@ -118,7 +166,6 @@ const Navbar = () => {
         </div>
       </motion.nav>
 
-      {/* MOBILE MENU OVERLAY */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -129,7 +176,7 @@ const Navbar = () => {
             transition={{ type: "tween" }}
             className={`
               md:hidden 
-              pt-20  /* push below fixed nav so we don't overlap logo */
+              pt-20
               pb-4 
               w-full 
               backdrop-blur-sm
@@ -140,9 +187,31 @@ const Navbar = () => {
             `}
           >
             <div className="px-6 space-y-4">
-              <NavLink to="/pricing" onClick={() => setIsOpen(false)}>
-                Pricing
-              </NavLink>
+              {currentUser ? (
+                <NavLink to="/devspaces" onClick={() => setIsOpen(false)}>
+                  DevSpaces
+                </NavLink>
+              ) : (
+                <NavLink to="/pricing" onClick={() => setIsOpen(false)}>
+                  Pricing
+                </NavLink>
+              )}
+              {currentUser && (
+                <>
+                  <NavLink to="/profile" onClick={() => setIsOpen(false)}>
+                    Profile
+                  </NavLink>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setIsOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-gray-200 hover:bg-white/10"
+                  >
+                    Logout
+                  </button>
+                </>
+              )}
             </div>
           </motion.div>
         )}
