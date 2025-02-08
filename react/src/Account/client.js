@@ -1,49 +1,98 @@
-
-// Simulate a network delay
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-let dummyUser = null;
+import { api } from '../api/config';
 
 export const signin = async (credentials) => {
-  await delay(500); // simulate network delay
-  // For testing, if the credentials match "test", return a dummy user.
-  if (credentials.username === "test" && credentials.password === "test") {
-    dummyUser = { id: "1", username: "test", email: "test@example.com" };
-    return dummyUser;
+  try {
+    const response = await api.post("/auth/signin", credentials);
+    return response.data;
+  } catch (error) {
+    if (error.response) {
+      throw new Error(error.response.data.detail || "Login failed");
+    }
+    throw new Error("Network error occurred");
   }
-  throw new Error("Invalid credentials");
 };
 
-// Simulated sign up function
-export const signup = async (userData) => {
-  await delay(500);
-  // For now, simply set the dummyUser and return it.
-  dummyUser = { id: "1", ...userData };
-  return dummyUser;
+export const signout = async () => {
+  try {
+    const response = await api.get("/auth/signout");
+    return response.data;
+  } catch (error) {
+    console.error("Signout error:", error);
+    throw error;
+  }
 };
 
-// Simulated check session function
 export const checkSession = async () => {
-  await delay(500);
-  return dummyUser;
+  try {
+    const response = await api.get("/auth/check-session");
+    return response.data;
+  } catch (error) {
+    return null;
+  }
 };
 
-export const processPayment = async (paymentDetails) => {
-  await delay(1000); // Simulate payment processing
-  
-  if (!paymentDetails.cardNumber || paymentDetails.cardNumber.length !== 16) {
-    throw new Error("Invalid card number");
+export const profile = async (userId) => {
+  try {
+    const response = await api.get(`/auth/profile/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch profile:", error);
+    throw error;
   }
-  
-  if (!paymentDetails.expiryDate || !paymentDetails.expiryDate.includes('/')) {
-    throw new Error("Invalid expiry date");
+};
+
+export const updateProfile = async (userId, updatedData) => {
+  try {
+    const response = await api.put(`/auth/profile/${userId}`, updatedData);
+    return response.data;
+  } catch (error) {
+    console.error("Failed to update profile:", error);
+    throw error;
   }
-  
-  if (!paymentDetails.cvv || paymentDetails.cvv.length !== 3) {
-    throw new Error("Invalid CVV");
+};
+
+export const uploadProfileImage = async (userId, file) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await api.post(`/auth/profile/${userId}/image`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to upload image:", error);
+    throw error;
   }
-  
-  return {
-    success: true,
-    transactionId: Math.random().toString(36).substring(2, 15)
-  };
+};
+
+export const getUsers = async (page = 1, search) => {
+  try {
+    const skip = (page - 1) * 20;
+    const params = new URLSearchParams({
+      skip: skip.toString(),
+      limit: '20'
+    });
+    if (search) params.append('search', search);
+    
+    const response = await api.get(`/auth/users?${params}`);
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch users:", error);
+    throw error;
+  }
+};
+
+export const updateProfilePicture = async (userId, imageUrl) => {
+  try {
+    const response = await api.put(`/auth/profile/${userId}/update-picture`, {
+      profile_picture: imageUrl
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to update profile picture:', error);
+    throw error;
+  }
 };

@@ -1,25 +1,31 @@
+import { createSlice } from "@reduxjs/toolkit";
+
 const initialState = {
-  currentUser: null
+  currentUser: null,
+  loading: false,
+  error: null,
+  sessionChecked: false
 };
 
-const accountReducer = (state = initialState, action) => {
-  switch (action.type) {
-    case "SET_CURRENT_USER":
-      return { ...state, currentUser: action.payload };
-    case "LOGOUT":
-      return { ...state, currentUser: null };
-    default:
-      return state;
-  }
-};
-
-export const setCurrentUser = (user) => ({
-  type: "SET_CURRENT_USER",
-  payload: user
+const accountSlice = createSlice({
+  name: "account",
+  initialState,
+  reducers: {
+    setCurrentUser: (state, action) => {
+      state.currentUser = action.payload;
+      state.error = null;
+      state.loading = false;
+      state.sessionChecked = true;
+    },
+    setError: (state, action) => {
+      state.error = action.payload;
+      state.loading = false;
+    },
+    setLoading: (state, action) => {
+      state.loading = action.payload;
+    }
+  },
 });
 
-export const logout = () => ({
-  type: "LOGOUT"
-});
-
-export default accountReducer;
+export const { setCurrentUser, setError, setLoading } = accountSlice.actions;
+export default accountSlice.reducer;
