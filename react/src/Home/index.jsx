@@ -331,6 +331,16 @@ const Home = () => {
                 Get Started Free
                 <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
               </Link>
+              {/* Add new workspace button */}
+              <Link
+                to="/Codespace"
+                className={`px-8 py-4 ${theme.glass} rounded-lg text-gray-300 
+                  font-semibold hover:bg-white/10 transition-all duration-300
+                  flex items-center gap-2`}
+              >
+                Try Workspace
+                <FaCode className="text-xl" />
+              </Link>
             </div>
           </motion.div>
         </Section>
