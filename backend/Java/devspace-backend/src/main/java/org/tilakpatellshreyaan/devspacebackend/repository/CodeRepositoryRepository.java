@@ -7,6 +7,6 @@ import java.util.List;
 
 @Repository
 public interface CodeRepositoryRepository extends MongoRepository<CodeRepository, String> {
-  List<CodeRepository> findByCreatorId(String creatorId);
-  List<CodeRepository> findByCreatorIdOrCollaboratorIdsContaining(String creatorId, String collaboratorId);
+  List<CodeRepository> findByOwnerId(String ownerId);
+  List<CodeRepository> findByOwnerIdOrCollaboratorIdsContaining(String ownerId, String collaboratorId);
 }
