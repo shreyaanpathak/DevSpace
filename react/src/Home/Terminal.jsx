@@ -1,32 +1,87 @@
-import { TypeAnimation } from 'react-type-animation';
+// src/components/Terminal.jsx
+import { useEffect, useRef } from "react";
+import * as monaco from "monaco-editor";
+import { useTheme } from "./ThemeContext";
 
 const Terminal = () => {
-  const terminalSequence = [
-    'devspace init my-project', 1000,
-    'Creating workspace...', 1000,
-    'Setting up CUDA environment...', 1000,
-    'Ready to code! 🚀', 1000,
-  ];
+  const editorRef = useRef(null);
+  const { theme } = useTheme();
+
+  useEffect(() => {
+    if (!editorRef.current) return;
+
+    // Define a custom Monaco theme based on the current theme's color codes
+    monaco.editor.defineTheme("custom-theme", {
+      // If you want a light base for some themes, swap logic or remove if all are dark by default
+      base: theme.name === "Monochrome" ? "vs" : "vs-dark",
+      inherit: true,
+      rules: [
+        {
+          token: "comment",
+          foreground: theme.monacoComment || "888888",
+          fontStyle: "italic",
+        },
+        {
+          token: "keyword",
+          foreground: theme.monacoKeyword || "ff007f",
+          fontStyle: "bold",
+        },
+        {
+          token: "string",
+          foreground: theme.monacoString || "00ff00",
+        },
+        {
+          token: "number",
+          foreground: "FFD700", // Gold for numbers
+        },
+        {
+          token: "variable",
+          foreground: theme.monacoForeground || "ffffff",
+        },
+      ],
+      colors: {
+        "editor.foreground": theme.monacoForeground || "#ffffff",
+        "editor.background": theme.monacoBackground || "#1e1e1e",
+        "editorCursor.foreground": "#ffcc00",
+        "editor.lineHighlightBackground": "#2a2a2a",
+        "editor.selectionBackground": "#44475a",
+        "editor.inactiveSelectionBackground": "#6272a4",
+      },
+    });
+
+    // Create the Monaco editor
+    const editor = monaco.editor.create(editorRef.current, {
+      value: `# GPU Setup Script
+mkdir my-project && cd my-project
+
+git init
+
+conda create --name cuda-env python=3.8
+conda activate cuda-env
+
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+echo "Environment setup complete!"
+`,
+      language: "bash",
+      theme: "custom-theme", // Apply our defined theme
+      readOnly: true,
+      minimap: { enabled: false },
+      fontSize: 14,
+      scrollBeyondLastLine: false,
+      wordWrap: "on",
+    });
+
+    return () => {
+      editor.dispose();
+    };
+  }, [theme]);
 
   return (
-    <div className="mockup-terminal bg-gray-900 text-gray-100 shadow-2xl rounded-lg overflow-hidden w-full border border-gray-700/50">
-      <div className="bg-gray-800 px-4 py-2 flex items-center gap-2">
-        <div className="w-3 h-3 rounded-full bg-red-500"></div>
-        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-        <div className="w-3 h-3 rounded-full bg-green-500"></div>
-        <div className="ml-4 text-sm text-gray-400">terminal</div>
-      </div>
-      <div className="p-6 font-mono">
-        <TypeAnimation
-          sequence={terminalSequence}
-          wrapper="div"
-          cursor={true}
-          repeat={Infinity}
-          style={{ fontSize: '1rem' }}
-          className="leading-loose"
-        />
-      </div>
-    </div>
+    <div
+      ref={editorRef}
+      className="h-64 w-full rounded-lg shadow-lg"
+    />
   );
 };
 
