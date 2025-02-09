@@ -1,6 +1,8 @@
 # 🚀 DevSpace
 > Next-generation collaborative development environment with GPU acceleration
 
+!(Hero Section)[/backend/DevSpace.jpeg]
+
 Created by Tilak Patel & Shreyaan Pathak
 
 [Tilak's Portfolio](https://www.tilakpatell.com) 
