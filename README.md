@@ -193,7 +193,7 @@ Directory structure:
 - **TailwindCSS:** Utility-first styling
 - **DaisyUI:** For custom themes
 - **three.js:** Dynamic background
-- **Monaco Editor:**
+- **Monaco Editor:** Used to create Code Editor
 - **Framer Motion:** Smooth animations
 
 ### Development Tools
