@@ -1,0 +1,11 @@
+🚀 Inspiration DevSpace was born out of a passion for Networks, Distributed Systems, and High-Performance Computing (HPC). We wanted to create a real-time collaborative coding platform that not only enhances productivity but also provides a budget-friendly high-performance testing environment for startups and developers.
+
+💡 What It Does DevSpace is a real-time, multi-file collaborative coding platform that integrates: ✅ AI-assisted debugging to catch errors faster ✅ Cloud-accelerated execution for high-performance computing ✅ Jetson-powered Docker runtime for seamless GPU-accelerated workloads
+
+Designed for developers, AI researchers, and HPC teams, DevSpace enables users to write, debug, and execute code together in real-time. Whether you're a student working on a group project, an AI engineer optimizing CUDA kernels, or a startup developing a next-gen app, DevSpace streamlines your workflow with live collaboration, instant execution, and intelligent debugging.
+
+🛠 How We Built It A lot of Celsius energy drinks and even more late-night debugging sessions went into building DevSpace! The tech stack includes: 🖥 Backend: FastAPI, WebSockets, MongoDB, Docker, CUDA, OpenMP, multithreading 🌐 Frontend: React, TailwindCSS, DaisyUI, Framer Motion, Monaco Editor, Y.js 🔌 Other Tools: Jetson Nano, WebRTC, Postman, Redux, Three.js, XTerm, Lodash
+
+⚡ Challenges We Ran Into Building DevSpace came with its fair share of challenges:
+
+Real-time WebSocket communication between clients and the Jetson Nano was tricky. MongoDB was a new experience for us, leading to initial integration struggles. 🎉 Accomplishments We're Proud Of Aesthetic and intuitive UI that makes collaboration seamless. Advanced features in the code editor, enhancing developer experience. Successfully compiling and running code via Docker on the Jetson Nano – a major technical achievement! 📚 What We Learned Hands-on experience with new technologies like Y.js, WebSockets, and GPU-accelerated execution. The importance of efficient team collaboration, especially when debugging under pressure. 🚀 What's Next for DevSpace? We plan to polish and enhance DevSpace, making it a robust platform for real-time collaborative coding. Who knows? It might even evolve into a full-fledged startup! Stay tuned.
