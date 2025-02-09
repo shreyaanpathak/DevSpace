@@ -51,17 +51,19 @@ export default function fileReducer(state = initialState, action) {
         error: action.payload,
         loading: false,
       };
-      case UPDATE_FILE:
-        return {
-          ...state,
-          repositoryFiles: state.repositoryFiles.map((file) =>
-            file._id === action.payload._id ? action.payload : file
-          ),
-          currentFile:
-            state.currentFile?._id === action.payload._id
-              ? action.payload
-              : state.currentFile,
-        };
+    case UPDATE_FILE:
+      return {
+        ...state,
+        repositoryFiles: state.repositoryFiles.map((file) =>
+          file._id === action.payload._id
+            ? { ...file, ...action.payload }  // Create a new object with merged properties
+            : file
+        ),
+        currentFile:
+          state.currentFile?._id === action.payload._id
+            ? { ...state.currentFile, ...action.payload }  // Create a new object here too
+            : state.currentFile,
+      };
     case ADD_FILE:
       return {
         ...state,

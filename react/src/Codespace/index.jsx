@@ -61,7 +61,7 @@ const Codespace = () => {
     }
   }, [repoId, dispatch]);
 
-  const handleFileUpdate = async (fileId, fileData) => {
+  const handleFileUpdate = async (fileId, newContent) => {
     if (!fileId || !currentFile) {
         console.error('Missing required data for update:', { fileId, currentFile });
         return;
@@ -69,17 +69,20 @@ const Codespace = () => {
 
     try {
         const updateData = {
-            _id: currentFile._id,
-            filename: currentFile.filename,
-            language: currentFile.language,
-            repositoryId: currentFile.repositoryId,
-            content: fileData,
+            content: newContent,
             lastModified: new Date().toISOString()
         };
         
-        console.log('Sending update with data:', updateData);
         const updatedFile = await filesApi.updateFile(fileId, updateData);
-        dispatch({ type: 'file/UPDATE_FILE', payload: updatedFile });
+        
+        // Ensure we're getting a fresh object from the server
+        const refreshedFiles = await filesApi.getFilesByRepository(currentRepository.id);
+        dispatch({ type: 'file/SET_REPOSITORY_FILES', payload: refreshedFiles });
+        
+        // Update current file if it's the one we just modified
+        if (currentFile._id === fileId) {
+            dispatch({ type: 'file/SET_CURRENT_FILE', payload: updatedFile });
+        }
     } catch (error) {
         console.error('Failed to update file:', error);
     }
@@ -102,6 +105,12 @@ const Codespace = () => {
         dispatch({ type: 'file/SET_CURRENT_FILE', payload: null });
       }
     }
+  };
+  
+  const [activeCollaborators, setActiveCollaborators] = useState([]);
+
+  const handleCollaboratorsChange = (collaborators) => {
+    setActiveCollaborators(collaborators);
   };
 
   if (loading) {
@@ -144,20 +153,21 @@ const Codespace = () => {
               <FaUser className="text-gray-400" />
               <h2 className="text-gray-200 font-semibold">Collaborators</h2>
             </div>
-            <Collaborators users={collaborators} />
+            <Collaborators users={activeCollaborators} />
           </div>
         </motion.div>
 
         <div className="flex-1 flex flex-col" key={currentRepository?.id}>
-          <div className="flex-1 bg-[#1e1e1e] relative">
-            <CodeEditor
-              currentFile={currentFile}
-              onFileUpdate={handleFileUpdate}
-              openFiles={openFiles}
-              onFileClose={handleFileClose}
-              onFileSelect={handleFileSelect}
-            />
-          </div>
+      <div className="flex-1 bg-[#1e1e1e] relative">
+        <CodeEditor
+          currentFile={currentFile}
+          onFileUpdate={handleFileUpdate}
+          openFiles={openFiles}
+          onFileClose={handleFileClose}
+          onFileSelect={handleFileSelect}
+          onCollaboratorsChange={handleCollaboratorsChange}
+        />
+      </div>
 
           <motion.div 
             initial={{ y: 50 }}
