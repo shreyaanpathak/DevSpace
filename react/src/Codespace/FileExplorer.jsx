@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../Home/ThemeContext";
-import { FaFile, FaFolder, FaCode } from "react-icons/fa";
+import { FaFile, FaFolder, FaCode, FaChevronRight, FaEllipsisH, FaUpload, FaTrash   } from "react-icons/fa";
 import { repositoriesApi } from '../api/repositories';
 import { filesApi } from '../api/files';
 import { actions } from '../redux/repositorySlice';
@@ -13,9 +13,9 @@ const FileExplorer = () => {
   const dispatch = useDispatch();
   const { theme } = useTheme();
   const { repoId } = useParams();
-  const navigate = useNavigate();
   const [expandedFolders, setExpandedFolders] = useState(new Set(["src"]));
-  
+  const [expandedRepos, setExpandedRepos] = useState(new Set());
+
   const files = useSelector(state => state.file.repositoryFiles);
   const currentFile = useSelector(state => state.file.currentFile);
   const repositories = useSelector(state => state.repository.accessibleRepositories);
@@ -57,28 +57,81 @@ const FileExplorer = () => {
       dispatch(fileActions.setFileLoading(true));
       dispatch(fileActions.setFile(file));
       dispatch(fileActions.setFileLoading(false));
+    } else {
+      toggleFolder(file._id);
     }
   };
 
   const handleRepositoryClick = async (repository) => {
     try {
-      dispatch(actions.setRepositoryLoading(true));
       dispatch(actions.setRepository(repository));
-      
-      // Load files for the selected repository
+
       const files = await filesApi.getFilesByRepository(repository.id);
-  
       dispatch(fileActions.setRepositoryFiles(files));
-      
-      // Set the first file as current if available
+
       if (files.length > 0) {
         dispatch(fileActions.setFile(files[0]));
       }
+
+      // Toggle repository expansion
+      setExpandedRepos(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(repository._id)) {
+          newSet.delete(repository._id);
+        } else {
+          newSet.add(repository._id);
+        }
+        return newSet;
+      });
     } catch (error) {
       console.error('Error loading repository:', error);
       dispatch(actions.setRepositoryError(error.message));
     } finally {
       dispatch(actions.setRepositoryLoading(false));
+    }
+  };
+
+  const handleFileUpload = async (e, repoId) => {
+    e.stopPropagation();
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    
+    input.onchange = async (event) => {
+      const files = Array.from(event.target.files);
+      try {
+        dispatch(fileActions.setFileLoading(true));
+        // Assuming you have an upload endpoint in your API
+        await Promise.all(files.map(file => 
+          filesApi.uploadFile(repoId, file)
+        ));
+        // Reload files after upload
+        const updatedFiles = await filesApi.getFilesByRepository(repoId);
+        dispatch(fileActions.setRepositoryFiles(updatedFiles));
+      } catch (error) {
+        console.error('Error uploading files:', error);
+      } finally {
+        dispatch(fileActions.setFileLoading(false));
+      }
+    };
+    
+    input.click();
+  };
+  
+  const handleFileDelete = async (e, file) => {
+    e.stopPropagation();
+    if (window.confirm(`Are you sure you want to delete ${file.filename}?`)) {
+      try {
+        dispatch(fileActions.setFileLoading(true));
+        await filesApi.deleteFile(file._id);
+        // Reload files after deletion
+        const updatedFiles = await filesApi.getFilesByRepository(repoId);
+        dispatch(fileActions.setRepositoryFiles(updatedFiles));
+      } catch (error) {
+        console.error('Error deleting file:', error);
+      } finally {
+        dispatch(fileActions.setFileLoading(false));
+      }
     }
   };
 
@@ -94,61 +147,172 @@ const FileExplorer = () => {
     });
   };
 
+  const renderFileItem = (file, level = 0) => {
+    const isFolder = file.type === 'folder';
+    const isExpanded = expandedFolders.has(file._id);
+    const isActive = currentFile?._id === file._id;
+
+    return (
+      <div key={file._id}>
+        <motion.div
+          whileHover={{ 
+            backgroundColor: "rgba(255, 255, 255, 0.08)",
+            scale: 1.01,
+          }}
+          className={`flex items-center gap-2 py-3 px-3 cursor-pointer
+            rounded-lg transition-all duration-200 group
+            ${isActive ? 'bg-transparent' : ''}`}
+          style={{ paddingLeft: `${level * 16 + 12}px` }}
+          onClick={() => handleFileClick(file)}
+        >
+          <div className="flex items-center gap-2 flex-1">
+            {isFolder && (
+              <motion.div
+                animate={{ rotate: isExpanded ? 90 : 0 }}
+                transition={{ duration: 0.2 }}
+                className="text-gray-400"
+              >
+                <FaChevronRight className="text-xs" />
+              </motion.div>
+            )}
+            {isFolder ? (
+              <FaFolder className={`${isExpanded ? 'text-yellow-400' : 'text-gray-400'}`} />
+            ) : (
+              <FaFile className="text-gray-400" />
+            )}
+            <span className="text-gray-300 text-sm">{file.filename}</span>
+            </div>
+        
+        <motion.div 
+          initial={{ opacity: 0 }}
+          whileHover={{ opacity: 1 }}
+          className="hidden group-hover:flex items-center gap-2"
+        >
+          <button 
+            className="p-1 hover:bg-white/10 rounded-md transition-colors"
+            onClick={(e) => handleFileDelete(e, file)}
+            title="Delete file"
+          >
+            <FaTrash className="text-gray-400 text-xs" />
+          </button>
+        </motion.div>
+      </motion.div>
+
+        {isFolder && file.children && (
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                {file.children.map(child => renderFileItem(child, level + 1))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-4">
-        <span className="text-gray-400">Loading files...</span>
-      </div>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex items-center justify-center p-8"
+      >
+        <div className="text-gray-400 flex items-center gap-2">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, duration: 1 }}
+          >
+            <FaCode className="text-lg" />
+          </motion.div>
+          Loading...
+        </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {/* Repositories Section */}
-      <div className="mb-4">
-        <h2 className="text-gray-200 font-semibold mb-2 px-3">Repositories</h2>
-        {repositories.map(repo => (
+    <div className="h-full overflow-y-auto">
+      {/* Header section remains the same */}
+      <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-2">
           <motion.div
-            key={repo._id}
-            onClick={() => handleRepositoryClick(repo)}
-            whileHover={{ 
-              backgroundColor: "rgba(255, 255, 255, 0.08)",
-              scale: 1.02,
-            }}
-            className={`flex items-center gap-2 py-2 px-3 cursor-pointer
-              transition-all duration-200 ${repo._id === repoId ? 'bg-white/10' : ''}`}
+            whileHover={{ rotate: 180 }}
+            transition={{ duration: 0.3 }}
           >
-            <FaFolder className="text-gray-400" />
-            <span className="text-gray-300 text-sm">{repo.repositoryName}</span>
+            <FaCode className="text-gray-400" />
           </motion.div>
-        ))}
+          <span className="text-gray-200 font-medium">Explorer</span>
+        </div>
       </div>
 
-      {/* Files Section */}
-      {files.length > 0 && (
-        <div>
-          <h2 className="text-gray-200 font-semibold mb-2 px-3">Files</h2>
-          {files.map(file => (
-            <motion.div
-              key={file._id}
-              onClick={() => handleFileClick(file)}
-              whileHover={{ 
-                backgroundColor: "rgba(255, 255, 255, 0.08)",
-                scale: 1.02,
-              }}
-              className={`flex items-center gap-2 py-2 px-3 cursor-pointer
-                transition-all duration-200 ${currentFile?._id === file._id ? 'bg-white/10' : ''}`}
-            >
-              {file.type === 'folder' ? (
-                <FaFolder className="text-gray-400" />
-              ) : (
-                <FaFile className="text-gray-400" />
-              )}
-              <span className="text-gray-300 text-sm">{file.filename}</span>
-            </motion.div>
+      <div className="space-y-4 p-2">
+        {/* Repositories Section */}
+        <div className="space-y-1">
+          {repositories.map(repo => (
+            <div key={repo._id}>
+              <motion.div
+                onClick={() => handleRepositoryClick(repo)}
+                whileHover={{
+                  backgroundColor: `${theme.background}`,
+                  scale: 1.01,
+                }}
+                className={`flex items-center gap-2 py-2 px-3 cursor-pointer
+        rounded-lg transition-all duration-200 group
+        ${repo._id === repoId ? 'bg-white/10' : ''}`}
+              >
+                <motion.div
+                  animate={{ rotate: expandedRepos.has(repo._id) ? 90 : 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="text-gray-400"
+                >
+                  <FaChevronRight className="text-xs" />
+                </motion.div>
+                <FaFolder className={`${repo._id === repoId ? 'text-yellow-400' : 'text-gray-400'}`} />
+                <span className="text-gray-300 text-sm flex-1">{repo.repositoryName}</span>
+
+                {repo._id === repoId && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex items-center gap-2"
+                  >
+                    <button
+                      className="p-1.5 hover:bg-white/10 rounded-md transition-colors"
+                      onClick={(e) => handleFileUpload(e, repo._id)}
+                      title="Upload files"
+                    >
+                      <FaUpload className="text-gray-400 text-xs" />
+                    </button>
+                  </motion.div>
+                )}
+              </motion.div>
+
+              {/* Files Section - Indented and animated */}
+              <AnimatePresence>
+                {expandedRepos.has(repo._id) && repo._id === repoId && files.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="ml-6" // Add indentation
+                  >
+                    <div className="space-y-0.5">
+                      {files.map(file => renderFileItem(file))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           ))}
         </div>
-      )}
+      </div>
     </div>
   );
 };
