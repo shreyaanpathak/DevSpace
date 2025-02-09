@@ -21,7 +21,6 @@ export const filesApi = {
     }
   },
 
-  // Update existing file
   updateFile: async (fileId, fileData) => {
     if (!fileId) {
       throw new Error("FileId is required for update");
@@ -34,12 +33,13 @@ export const filesApi = {
       throw error;
     }
   },
+
   createFile: async (fileData) => {
     try {
-      const response = await api.post('/files', fileData);
+      const response = await api.post("/files", fileData);
       return response.data;
     } catch (error) {
-      console.error('Error creating file:', error);
+      console.error("Error creating file:", error);
       throw error;
     }
   },
@@ -48,7 +48,17 @@ export const filesApi = {
     try {
       await api.delete(`/files/${fileId}`);
     } catch (error) {
-      console.error('Error deleting file:', error);
+      console.error("Error deleting file:", error);
+      throw error;
+    }
+  },
+
+  executeFile: async (fileId) => {
+    try {
+      const response = await api.post(`/files/${fileId}/execute`);
+      return response.data;
+    } catch (error) {
+      console.error("Error executing file:", error);
       throw error;
     }
   },

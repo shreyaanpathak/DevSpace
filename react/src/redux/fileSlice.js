@@ -7,13 +7,20 @@ export const SET_FILE_LOADING = "file/SET_FILE_LOADING";
 export const SET_FILE_ERROR = "file/SET_FILE_ERROR";
 export const UPDATE_FILE = "file/UPDATE_FILE";
 export const ADD_FILE = "file/ADD_FILE";
+export const EXECUTE_FILE_REQUEST = "file/EXECUTE_FILE_REQUEST";
+export const EXECUTE_FILE_SUCCESS = "file/EXECUTE_FILE_SUCCESS";
+export const EXECUTE_FILE_FAILURE = "file/EXECUTE_FILE_FAILURE";
+
 
 const initialState = {
   currentFile: null,
   repositoryFiles: [],
   loading: false,
   error: null,
+  executing: false, // New: Execution state
+  executionResult: null, // New: Execution result storage
 };
+
 
 // Action Creators
 export const actions = {
@@ -23,7 +30,11 @@ export const actions = {
   setFileError: (payload) => ({ type: SET_FILE_ERROR, payload }),
   updateFile: (payload) => ({ type: UPDATE_FILE, payload }),
   addFile: (payload) => ({ type: ADD_FILE, payload }),
+  executeFileRequest: () => ({ type: EXECUTE_FILE_REQUEST }),
+  executeFileSuccess: (payload) => ({ type: EXECUTE_FILE_SUCCESS, payload }),
+  executeFileFailure: (payload) => ({ type: EXECUTE_FILE_FAILURE, payload }),
 };
+
 
 // Reducer
 export default function fileReducer(state = initialState, action) {
@@ -69,10 +80,30 @@ export default function fileReducer(state = initialState, action) {
         ...state,
         repositoryFiles: [...state.repositoryFiles, action.payload],
       };
+    case EXECUTE_FILE_REQUEST:
+      return {
+        ...state,
+        executing: true,
+        executionResult: null,
+        error: null,
+      };
+    case EXECUTE_FILE_SUCCESS:
+      return {
+        ...state,
+        executing: false,
+        executionResult: action.payload,
+      };
+    case EXECUTE_FILE_FAILURE:
+      return {
+        ...state,
+        executing: false,
+        error: action.payload,
+      };
     default:
       return state;
   }
 }
+
 
 // API Action Helpers
 export const fetchFile = (fileId) => async (dispatch) => {
@@ -98,3 +129,14 @@ export const fetchRepositoryFiles = (repoId) => async (dispatch) => {
     dispatch(actions.setFileLoading(false));
   }
 };
+
+export const executeFile = (fileId) => async (dispatch) => {
+  dispatch(actions.executeFileRequest());
+  try {
+    const result = await filesApi.executeFile(fileId);
+    dispatch(actions.executeFileSuccess(result));
+  } catch (error) {
+    dispatch(actions.executeFileFailure(error.message));
+  }
+};
+
