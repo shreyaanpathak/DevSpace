@@ -145,11 +145,10 @@ const FileExplorer = () => {
   
         await Promise.all(uploadPromises);
   
-        // **Wait a short delay before fetching the updated file list**
         setTimeout(async () => {
           const updatedFiles = await filesApi.getFilesByRepository(currentRepository.id);
           dispatch(fileActions.setRepositoryFiles(updatedFiles));
-        }, 500);  // Wait for 1 second before refetching
+        }, 500);  
   
       } catch (error) {
         console.error('Error uploading files:', error);
