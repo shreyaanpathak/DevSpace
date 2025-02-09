@@ -21,30 +21,37 @@ DOCKER_CONFIGS = {
         "gpu_flags": "--runtime nvidia"
     },
     "cpp": {
-        "image": "nvcr.io/nvidia/l4t-base:r32.6.1",
-        "run_cmd": "g++ -o /tmp/output main.cpp && /tmp/output",
+        "image": "nvcr.io/nvidia/l4t-ml:r32.6.1-py3",  # Use ML image that includes g++
+        "run_cmd": "g++ -o /tmp/output Main.cpp && /tmp/output",
         "file_ext": ".cpp",
         "gpu_flags": "--runtime nvidia"
     },
     "cuda": {
         "image": "nvcr.io/nvidia/l4t-ml:r32.6.1-py3",
-        "run_cmd": "nvcc -o /tmp/output main.cu && /tmp/output",
+        "run_cmd": "nvcc -o /tmp/output Main.cu && /tmp/output",
         "file_ext": ".cu",
         "gpu_flags": "--runtime nvidia"
     },
     "c": {
-        "image": "nvcr.io/nvidia/l4t-base:r32.6.1",
-        "run_cmd": "gcc -o /tmp/output main.c && /tmp/output",
+        "image": "nvcr.io/nvidia/l4t-ml:r32.6.1-py3", 
+        "run_cmd": "gcc -o /tmp/output Main.c && /tmp/output",
         "file_ext": ".c",
         "gpu_flags": "--runtime nvidia"
     },
-    "java": {
-        "image": "openjdk:latest",
-        "run_cmd": "javac Main.java && java Main",
-        "file_ext": ".java",
-        "gpu_flags": ""
+    "c_with_install": {  
+        "image": "nvcr.io/nvidia/l4t-base:r32.6.1",
+        "run_cmd": "apt update && apt install -y gcc && gcc -o /tmp/output Main.c && /tmp/output",
+        "file_ext": ".c",
+        "gpu_flags": "--runtime nvidia"
+    },
+    "cpp_with_install": {  
+        "image": "nvcr.io/nvidia/l4t-base:r32.6.1",
+        "run_cmd": "apt update && apt install -y g++ && g++ -o /tmp/output Main.cpp && /tmp/output",
+        "file_ext": ".cpp",
+        "gpu_flags": "--runtime nvidia"
     }
 }
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -54,27 +61,57 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         logger.info("WebSocket connection accepted")
         
-        # Receive JSON containing file data
+        # Receive data
         file_data = await websocket.receive_text()
-        file_info = json.loads(file_data)
+        logger.info(f"Received raw data: {file_data}")
         
-        filename = file_info.get("filename")
-        language = file_info.get("language")
-        content = file_info.get("content")
+        try:
+            # Try parsing as JSON (for React app)
+            file_info = json.loads(file_data)
+            filename = file_info.get("filename")
+            language = file_info.get("language")
+            content = file_info.get("content")
+            
+            logger.info(f"Successfully parsed JSON data:")
+            logger.info(f"Filename: {filename}")
+            logger.info(f"Language: {language}")
+            logger.info(f"Content length: {len(content) if content else 0}")
+            
+        except json.JSONDecodeError:
+            logger.info("Failed to parse as JSON, trying test client format")
+            try:
+                # Try test client format
+                filename, language = file_data.split(",")
+                content = await websocket.receive_text()
+                if content == "EOF":
+                    content = ""
+                logger.info(f"Using test client format - filename: {filename}, language: {language}")
+            except Exception as e:
+                error_msg = f"Invalid data format: {str(e)}"
+                logger.error(error_msg)
+                await websocket.send_text(json.dumps({
+                    "type": "error",
+                    "data": error_msg
+                }))
+                return
 
-        if not filename or not language or not content:
+        if not filename or not language or content is None:
+            error_msg = "Missing required file details"
+            logger.error(error_msg)
             await websocket.send_text(json.dumps({
                 "type": "error",
-                "data": "Missing file details in JSON"
+                "data": error_msg
             }))
             return
 
-        logger.info(f"Received file '{filename}' for language '{language}'.")
+        logger.info(f"Processing file '{filename}' for language '{language}'")
 
         if language not in DOCKER_CONFIGS:
+            error_msg = f"Unsupported language: {language}"
+            logger.error(error_msg)
             await websocket.send_text(json.dumps({
                 "type": "error",
-                "data": f"Unsupported language: {language}"
+                "data": error_msg
             }))
             return
 
@@ -88,7 +125,7 @@ async def websocket_endpoint(websocket: WebSocket):
         with open(file_path, "w") as file:
             file.write(content)
 
-        logger.info(f"Saved {filename} at {file_path}")
+        logger.info(f"Saved file at {file_path}")
 
         # Construct Docker command
         docker_cmd = f"""
@@ -110,16 +147,23 @@ async def websocket_endpoint(websocket: WebSocket):
 
         # Stream output to WebSocket
         async def stream_output(stream, type_):
-            while True:
-                line = await stream.readline()
-                if not line:
-                    break
-                line_text = line.decode().strip()
-                logger.info(f"Got {type_}: {line_text}")
-                await websocket.send_text(json.dumps({
-                    "type": type_,
-                    "data": line_text
-                }))
+            try:
+                while True:
+                    line = await stream.readline()
+                    if not line:
+                        break
+                    try:
+                        line_text = line.decode().strip()
+                        if line_text:
+                            logger.info(f"Got {type_}: {line_text}")
+                            await websocket.send_text(json.dumps({
+                                "type": type_,
+                                "data": line_text
+                            }))
+                    except UnicodeDecodeError:
+                        continue
+            except Exception as e:
+                logger.error(f"Error in stream_output: {str(e)}")
 
         await asyncio.gather(
             stream_output(process.stdout, "output"),
@@ -154,3 +198,4 @@ async def websocket_endpoint(websocket: WebSocket):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+

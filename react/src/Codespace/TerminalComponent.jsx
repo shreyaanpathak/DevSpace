@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useTheme } from "../Home/ThemeContext";
+import { useSelector } from "react-redux";
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import { WebLinksAddon } from 'xterm-addon-web-links';
@@ -11,75 +12,16 @@ const TerminalComponent = () => {
     const { theme } = useTheme();
     const terminalRef = useRef(null);
     const xtermRef = useRef(null);
+    const wsRef = useRef(null);
     const [isRunning, setIsRunning] = useState(false);
-    const [commands, setCommands] = useState([
-        { type: 'command', content: 'python main.py' },
-        { type: 'output', content: 'Using device: cuda' },
-        { type: 'output', content: 'Loading CUDA kernels...' },
-        { type: 'success', content: 'Computation completed successfully!' }
-    ]);
+    const currentFile = useSelector(state => state.file.currentFile);
 
     useEffect(() => {
         const term = new Terminal({
             cursorBlink: true,
             fontSize: 14,
-            fontFamily: 'monospace'
-        });
-
-        const fitAddon = new FitAddon();
-        term.loadAddon(fitAddon);
-        term.loadAddon(new WebLinksAddon());
-
-        if (terminalRef.current) {
-            term.open(terminalRef.current);
-            setTimeout(() => {
-                fitAddon.fit();
-            }, 100);
-            xtermRef.current = term;
-
-            commands.forEach(cmd => {
-                if (cmd.type === 'command') {
-                    term.write(`$ ${cmd.content}\r\n`);
-                } else if (cmd.type === 'success') {
-                    term.write(`\x1b[32m${cmd.content}\x1b[0m\r\n`);
-                } else {
-                    term.write(`${cmd.content}\r\n`);
-                }
-            });
-
-            term.write('\r\n$ ');
-
-            term.onKey(({ key, domEvent }) => {
-                const printable = !domEvent.altKey && !domEvent.ctrlKey && !domEvent.metaKey;
-
-                if (domEvent.keyCode === 13) {
-                    const line = term.buffer.active.getLine(term.buffer.active.cursorY);
-                    const command = line.translateToString().trim().replace('$ ', '');
-                    handleCommand(command, term);
-                } else if (domEvent.keyCode === 8) {
-                    if (term.buffer.active.cursorX > 2) {
-                        term.write('\b \b');
-                    }
-                } else if (printable) {
-                    term.write(key);
-                }
-            });
-
-            const handleResize = () => {
-                fitAddon.fit();
-            };
-            window.addEventListener('resize', handleResize);
-            
-            return () => {
-                window.removeEventListener('resize', handleResize);
-                term.dispose();
-            };
-        }
-    }, []);
-
-    useEffect(() => {
-        if (xtermRef.current) {
-            xtermRef.current.options.theme = {
+            fontFamily: 'monospace',
+            theme: {
                 background: theme.monacoBackground,
                 foreground: theme.monacoForeground,
                 cursor: theme.monacoForeground,
@@ -92,55 +34,129 @@ const TerminalComponent = () => {
                 magenta: '#C678DD',
                 cyan: '#56B6C2',
                 white: '#ABB2BF',
+            }
+        });
+
+        const fitAddon = new FitAddon();
+        term.loadAddon(fitAddon);
+        term.loadAddon(new WebLinksAddon());
+
+        if (terminalRef.current) {
+            term.open(terminalRef.current);
+            setTimeout(() => {
+                fitAddon.fit();
+            }, 100);
+            xtermRef.current = term;
+            term.write('$ ');
+
+            const handleResize = () => {
+                fitAddon.fit();
+            };
+            window.addEventListener('resize', handleResize);
+            
+            return () => {
+                window.removeEventListener('resize', handleResize);
+                term.dispose();
             };
         }
     }, [theme]);
 
-    const handleCommand = (command, term) => {
-        term.write('\r\n');
+    useEffect(() => {
+        const connectWebSocket = () => {
+            const ws = new WebSocket('ws://172.20.10.2:8000/ws');
 
-        switch (command.toLowerCase()) {
-            case 'clear':
-                term.clear();
-                break;
-            case 'help':
-                term.writeln('Available commands:');
-                term.writeln('  clear     - Clear the terminal');
-                term.writeln('  help      - Show this help message');
-                term.writeln('  python    - Run Python commands');
-                term.writeln('  ls        - List files');
-                term.writeln('  pwd       - Print working directory');
-                break;
-            case 'python main.py':
-                setIsRunning(true);
-                term.writeln('Using device: cuda');
-                term.writeln('Loading CUDA kernels...');
-                setTimeout(() => {
-                    term.write('\x1b[32mComputation completed successfully!\x1b[0m\r\n');
-                    setIsRunning(false);
-                }, 2000);
-                break;
-            case 'ls':
-                term.writeln('main.py');
-                term.writeln('README.md');
-                term.writeln('requirements.txt');
-                break;
-            case 'pwd':
-                term.writeln('/workspace/project');
-                break;
-            case '':
-                break;
-            default:
-                term.writeln(`Command not found: ${command}`);
+            ws.onopen = () => {
+                if (xtermRef.current) {
+                    xtermRef.current.writeln('\r\n\x1b[32mConnected to execution server\x1b[0m');
+                    xtermRef.current.write('\r\n$ ');
+                }
+            };
+
+            ws.onmessage = (event) => {
+                if (xtermRef.current) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        switch (data.type) {
+                            case 'output':
+                                xtermRef.current.writeln('\r\n' + data.data);
+                                break;
+                            case 'error':
+                                xtermRef.current.writeln('\r\n\x1b[31m' + data.data + '\x1b[0m');
+                                break;
+                            case 'status':
+                                if (data.status === 'complete') {
+                                    setIsRunning(false);
+                                    xtermRef.current.writeln('\r\n\x1b[32mExecution completed (exit code: ' + data.exit_code + ')\x1b[0m');
+                                    xtermRef.current.write('\r\n$ ');
+                                }
+                                break;
+                            default:
+                                xtermRef.current.writeln('\r\n' + JSON.stringify(data));
+                        }
+                    } catch (error) {
+                        xtermRef.current.writeln('\r\n' + event.data);
+                    }
+                }
+            };
+
+            ws.onclose = () => {
+                if (xtermRef.current) {
+                    xtermRef.current.writeln('\r\n\x1b[31mDisconnected from execution server\x1b[0m');
+                    xtermRef.current.write('\r\n$ ');
+                }
+                setTimeout(connectWebSocket, 5000);
+            };
+
+            ws.onerror = (error) => {
+                if (xtermRef.current) {
+                    xtermRef.current.writeln('\r\n\x1b[31mWebSocket error: ' + error.message + '\x1b[0m');
+                    xtermRef.current.write('\r\n$ ');
+                }
+            };
+
+            wsRef.current = ws;
+        };
+
+        connectWebSocket();
+
+        return () => {
+            if (wsRef.current) {
+                wsRef.current.close();
+            }
+        };
+    }, []);
+
+    const handleExecution = async () => {
+        if (!currentFile || !currentFile.content) {
+            if (xtermRef.current) {
+                xtermRef.current.writeln('\r\n\x1b[31mNo file selected for execution\x1b[0m');
+                xtermRef.current.write('\r\n$ ');
+            }
+            return;
         }
 
-        term.write('$ ');
-    };
-
-    const handlePlay = () => {
-        if (xtermRef.current && !isRunning) {
+        try {
             setIsRunning(true);
-            handleCommand('python main.py', xtermRef.current);
+            if (xtermRef.current) {
+                xtermRef.current.writeln('\r\nStarting execution...');
+            }
+
+            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                const fileData = {
+                    filename: currentFile.filename,
+                    language: currentFile.language || 'python',
+                    content: currentFile.content
+                };
+                wsRef.current.send(JSON.stringify(fileData));
+            } else {
+                throw new Error('WebSocket connection not available');
+            }
+        } catch (error) {
+            if (xtermRef.current) {
+                xtermRef.current.writeln('\r\n\x1b[31mError starting execution: ' + error.message + '\x1b[0m');
+                xtermRef.current.write('\r\n$ ');
+            }
+            setIsRunning(false);
         }
     };
 
@@ -148,8 +164,11 @@ const TerminalComponent = () => {
         if (isRunning) {
             setIsRunning(false);
             if (xtermRef.current) {
-                xtermRef.current.writeln('\x1b[31mExecution stopped by user\x1b[0m');
-                xtermRef.current.write('$ ');
+                xtermRef.current.writeln('\r\n\x1b[31mExecution stopped by user\x1b[0m');
+                xtermRef.current.write('\r\n$ ');
+            }
+            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                wsRef.current.send(JSON.stringify({ type: 'stop' }));
             }
         }
     };
@@ -180,7 +199,7 @@ const TerminalComponent = () => {
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.95 }}
                         className="p-2 hover:bg-white/10 rounded-[7px]"
-                        onClick={handlePlay}
+                        onClick={handleExecution}
                         disabled={isRunning}
                     >
                         <FaPlay className={isRunning ? "text-gray-400" : "text-green-400"} />

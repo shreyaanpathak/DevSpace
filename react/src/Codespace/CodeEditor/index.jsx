@@ -205,6 +205,7 @@ const CodeEditor = ({
     // Create the shared Y.Text
     const ytext = ydoc.getText("monaco");
 
+
     // Create the Monaco editor
     editorInstance = monaco.editor.create(editorRef.current, {
       language: currentFile.language || "plaintext",

@@ -7,7 +7,9 @@ import org.tilakpatellshreyaan.devspacebackend.repository.FileDataRepository;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.java_websocket.client.WebSocketClient;
@@ -133,4 +135,17 @@ public class FileController {
       return ResponseEntity.status(400).body(Map.of("error", "Invalid file ID format"));
     }
   }
+
+
+  @GetMapping("/repositories/{repoId}/files")
+  public ResponseEntity<?> getFilesByRepository(@PathVariable String repoId) {
+    try {
+      ObjectId objectId = new ObjectId(repoId);
+      List<FileData> files = fileRepository.findByRepositoryId(objectId);
+      return ResponseEntity.ok(files.isEmpty() ? Collections.emptyList() : files);
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.status(400).body(Map.of("error", "Invalid repository ID format"));
+    }
+  }
+
 }
