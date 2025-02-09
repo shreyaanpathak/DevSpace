@@ -1,4 +1,4 @@
-import { api } from './config';
+import { api } from "./config";
 
 export const filesApi = {
   getFileById: async (fileId) => {
@@ -6,35 +6,50 @@ export const filesApi = {
       const response = await api.get(`/files/${fileId}`);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch file');
+      console.error("Error fetching file:", error);
+      throw error;
     }
   },
 
   getFilesByRepository: async (repoId) => {
     try {
-      const response = await api.get(`/files/repositories/${repoId}/files`)
-      console.log(response)
+      const response = await api.get(`/files/repositories/${repoId}/files`);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch repository files');
+      console.error("Error fetching repository files:", error);
+      throw error;
     }
   },
 
-  uploadFile: async (fileData) => {
+  // Update existing file
+  updateFile: async (fileId, fileData) => {
+    if (!fileId) {
+      throw new Error("FileId is required for update");
+    }
+    try {
+      const response = await api.put(`/files/${fileId}`, fileData);
+      return response.data;
+    } catch (error) {
+      console.error("Error updating file:", error);
+      throw error;
+    }
+  },
+  createFile: async (fileData) => {
     try {
       const response = await api.post('/files', fileData);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to upload file');
+      console.error('Error creating file:', error);
+      throw error;
     }
   },
 
-  updateFile: async (fileId, updatedFile) => {
+  deleteFile: async (fileId) => {
     try {
-      const response = await api.put(`/files/${fileId}`, updatedFile);
-      return response.data;
+      await api.delete(`/files/${fileId}`);
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to update file');
+      console.error('Error deleting file:', error);
+      throw error;
     }
-  }
+  },
 };

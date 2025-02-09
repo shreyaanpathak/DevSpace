@@ -1,13 +1,21 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../Home/ThemeContext";
-import { FaFile, FaFolder, FaCode, FaChevronRight, FaEllipsisH, FaUpload, FaTrash   } from "react-icons/fa";
-import { repositoriesApi } from '../api/repositories';
-import { filesApi } from '../api/files';
-import { actions } from '../redux/repositorySlice';
-import { actions as fileActions } from '../redux/fileSlice';
+import {
+  FaFile,
+  FaFolder,
+  FaCode,
+  FaChevronRight,
+  FaEllipsisH,
+  FaUpload,
+  FaTrash,
+} from "react-icons/fa";
+import { repositoriesApi } from "../api/repositories";
+import { filesApi } from "../api/files";
+import { actions } from "../redux/repositorySlice";
+import { actions as fileActions } from "../redux/fileSlice";
 
 const FileExplorer = () => {
   const dispatch = useDispatch();
@@ -15,11 +23,16 @@ const FileExplorer = () => {
   const { repoId } = useParams();
   const [expandedFolders, setExpandedFolders] = useState(new Set(["src"]));
   const [expandedRepos, setExpandedRepos] = useState(new Set());
+  const [uploadTrigger, setUploadTrigger] = useState(false);  // <--- NEW STATE
 
-  const files = useSelector(state => state.file.repositoryFiles);
-  const currentFile = useSelector(state => state.file.currentFile);
-  const repositories = useSelector(state => state.repository.accessibleRepositories);
-  const loading = useSelector(state => state.file.loading);
+
+  const files = useSelector((state) => state.file.repositoryFiles);
+  const currentRepository = useSelector(state => state.repository.currentRepository);
+  const currentFile = useSelector((state) => state.file.currentFile);
+  const repositories = useSelector(
+    (state) => state.repository.accessibleRepositories
+  );
+  const loading = useSelector((state) => state.file.loading);
 
   useEffect(() => {
     const loadRepositories = async () => {
@@ -27,7 +40,7 @@ const FileExplorer = () => {
         const repos = await repositoriesApi.getAccessibleRepositories();
         dispatch(actions.setAccessibleRepositories(repos));
       } catch (error) {
-        console.error('Error loading repositories:', error);
+        console.error("Error loading repositories:", error);
       }
     };
 
@@ -42,7 +55,7 @@ const FileExplorer = () => {
           const files = await filesApi.getFilesByRepository(repoId);
           dispatch(fileActions.setRepositoryFiles(files));
         } catch (error) {
-          console.error('Error loading files:', error);
+          console.error("Error loading files:", error);
         } finally {
           dispatch(fileActions.setFileLoading(false));
         }
@@ -50,10 +63,10 @@ const FileExplorer = () => {
 
       loadFiles();
     }
-  }, [repoId, dispatch]);
+  }, [repoId, dispatch, uploadTrigger]);
 
   const handleFileClick = (file) => {
-    if (file.type !== 'folder') {
+    if (file.type !== "folder") {
       dispatch(fileActions.setFileLoading(true));
       dispatch(fileActions.setFile(file));
       dispatch(fileActions.setFileLoading(false));
@@ -74,7 +87,7 @@ const FileExplorer = () => {
       }
 
       // Toggle repository expansion
-      setExpandedRepos(prev => {
+      setExpandedRepos((prev) => {
         const newSet = new Set(prev);
         if (newSet.has(repository._id)) {
           newSet.delete(repository._id);
@@ -84,15 +97,21 @@ const FileExplorer = () => {
         return newSet;
       });
     } catch (error) {
-      console.error('Error loading repository:', error);
+      console.error("Error loading repository:", error);
       dispatch(actions.setRepositoryError(error.message));
     } finally {
       dispatch(actions.setRepositoryLoading(false));
     }
   };
 
-  const handleFileUpload = async (e, repoId) => {
+  const handleFileUpload = async (e) => {
     e.stopPropagation();
+    
+    if (!currentRepository?.id) {
+      console.error('Repository ID is missing');
+      return;
+    }
+  
     const input = document.createElement('input');
     input.type = 'file';
     input.multiple = true;
@@ -101,13 +120,37 @@ const FileExplorer = () => {
       const files = Array.from(event.target.files);
       try {
         dispatch(fileActions.setFileLoading(true));
-        // Assuming you have an upload endpoint in your API
-        await Promise.all(files.map(file => 
-          filesApi.uploadFile(repoId, file)
-        ));
-        // Reload files after upload
-        const updatedFiles = await filesApi.getFilesByRepository(repoId);
-        dispatch(fileActions.setRepositoryFiles(updatedFiles));
+        
+        const uploadPromises = files.map(async file => {
+          const reader = new FileReader();
+          
+          const contentPromise = new Promise((resolve, reject) => {
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+          });
+          
+          reader.readAsText(file);
+          const content = await contentPromise;
+          
+          const fileData = {
+            filename: file.name,
+            language: file.name.split('.').pop() || 'text',
+            repositoryId: currentRepository.id,
+            content: content,
+            lastModified: new Date()
+          };
+          
+          return filesApi.createFile(fileData);
+        });
+  
+        await Promise.all(uploadPromises);
+  
+        // **Wait a short delay before fetching the updated file list**
+        setTimeout(async () => {
+          const updatedFiles = await filesApi.getFilesByRepository(currentRepository.id);
+          dispatch(fileActions.setRepositoryFiles(updatedFiles));
+        }, 500);  // Wait for 1 second before refetching
+  
       } catch (error) {
         console.error('Error uploading files:', error);
       } finally {
@@ -117,18 +160,27 @@ const FileExplorer = () => {
     
     input.click();
   };
-  
+
   const handleFileDelete = async (e, file) => {
     e.stopPropagation();
     if (window.confirm(`Are you sure you want to delete ${file.filename}?`)) {
       try {
         dispatch(fileActions.setFileLoading(true));
+
+        // Just use the ID string
         await filesApi.deleteFile(file._id);
-        // Reload files after deletion
-        const updatedFiles = await filesApi.getFilesByRepository(repoId);
-        dispatch(fileActions.setRepositoryFiles(updatedFiles));
+
+        dispatch(
+          fileActions.setRepositoryFiles(
+            files.filter((f) => f._id !== file._id)
+          )
+        );
+
+        if (currentFile?._id === file._id) {
+          dispatch(fileActions.setFile(null));
+        }
       } catch (error) {
-        console.error('Error deleting file:', error);
+        console.error("Error deleting file:", error);
       } finally {
         dispatch(fileActions.setFileLoading(false));
       }
@@ -136,7 +188,7 @@ const FileExplorer = () => {
   };
 
   const toggleFolder = (folderId) => {
-    setExpandedFolders(prev => {
+    setExpandedFolders((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(folderId)) {
         newSet.delete(folderId);
@@ -148,20 +200,20 @@ const FileExplorer = () => {
   };
 
   const renderFileItem = (file, level = 0) => {
-    const isFolder = file.type === 'folder';
+    const isFolder = file.type === "folder";
     const isExpanded = expandedFolders.has(file._id);
     const isActive = currentFile?._id === file._id;
 
     return (
       <div key={file._id}>
         <motion.div
-          whileHover={{ 
+          whileHover={{
             backgroundColor: "rgba(255, 255, 255, 0.08)",
             scale: 1.01,
           }}
           className={`flex items-center gap-2 py-3 px-3 cursor-pointer
             rounded-lg transition-all duration-200 group
-            ${isActive ? 'bg-transparent' : ''}`}
+            ${isActive ? "bg-transparent" : ""}`}
           style={{ paddingLeft: `${level * 16 + 12}px` }}
           onClick={() => handleFileClick(file)}
         >
@@ -176,27 +228,31 @@ const FileExplorer = () => {
               </motion.div>
             )}
             {isFolder ? (
-              <FaFolder className={`${isExpanded ? 'text-yellow-400' : 'text-gray-400'}`} />
+              <FaFolder
+                className={`${
+                  isExpanded ? "text-yellow-400" : "text-gray-400"
+                }`}
+              />
             ) : (
               <FaFile className="text-gray-400" />
             )}
             <span className="text-gray-300 text-sm">{file.filename}</span>
-            </div>
-        
-        <motion.div 
-          initial={{ opacity: 0 }}
-          whileHover={{ opacity: 1 }}
-          className="hidden group-hover:flex items-center gap-2"
-        >
-          <button 
-            className="p-1 hover:bg-white/10 rounded-md transition-colors"
-            onClick={(e) => handleFileDelete(e, file)}
-            title="Delete file"
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileHover={{ opacity: 1 }}
+            className="hidden group-hover:flex items-center gap-2"
           >
-            <FaTrash className="text-gray-400 text-xs" />
-          </button>
+            <button
+              className="p-1 hover:bg-white/10 rounded-md transition-colors"
+              onClick={(e) => handleFileDelete(e, file)}
+              title="Delete file"
+            >
+              <FaTrash className="text-gray-400 text-xs" />
+            </button>
+          </motion.div>
         </motion.div>
-      </motion.div>
 
         {isFolder && file.children && (
           <AnimatePresence>
@@ -207,7 +263,7 @@ const FileExplorer = () => {
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                {file.children.map(child => renderFileItem(child, level + 1))}
+                {file.children.map((child) => renderFileItem(child, level + 1))}
               </motion.div>
             )}
           </AnimatePresence>
@@ -254,7 +310,7 @@ const FileExplorer = () => {
       <div className="space-y-4 p-2">
         {/* Repositories Section */}
         <div className="space-y-1">
-          {repositories.map(repo => (
+          {repositories.map((repo) => (
             <div key={repo._id}>
               <motion.div
                 onClick={() => handleRepositoryClick(repo)}
@@ -264,7 +320,7 @@ const FileExplorer = () => {
                 }}
                 className={`flex items-center gap-2 py-2 px-3 cursor-pointer
         rounded-lg transition-all duration-200 group
-        ${repo._id === repoId ? 'bg-white/10' : ''}`}
+        ${repo._id === repoId ? "bg-white/10" : ""}`}
               >
                 <motion.div
                   animate={{ rotate: expandedRepos.has(repo._id) ? 90 : 0 }}
@@ -273,8 +329,14 @@ const FileExplorer = () => {
                 >
                   <FaChevronRight className="text-xs" />
                 </motion.div>
-                <FaFolder className={`${repo._id === repoId ? 'text-yellow-400' : 'text-gray-400'}`} />
-                <span className="text-gray-300 text-sm flex-1">{repo.repositoryName}</span>
+                <FaFolder
+                  className={`${
+                    repo._id === repoId ? "text-yellow-400" : "text-gray-400"
+                  }`}
+                />
+                <span className="text-gray-300 text-sm flex-1">
+                  {repo.repositoryName}
+                </span>
 
                 {repo._id === repoId && (
                   <motion.div
@@ -295,19 +357,21 @@ const FileExplorer = () => {
 
               {/* Files Section - Indented and animated */}
               <AnimatePresence>
-                {expandedRepos.has(repo._id) && repo._id === repoId && files.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="ml-6" // Add indentation
-                  >
-                    <div className="space-y-0.5">
-                      {files.map(file => renderFileItem(file))}
-                    </div>
-                  </motion.div>
-                )}
+                {expandedRepos.has(repo._id) &&
+                  repo._id === repoId &&
+                  files.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="ml-6" // Add indentation
+                    >
+                      <div className="space-y-0.5">
+                        {files.map((file) => renderFileItem(file))}
+                      </div>
+                    </motion.div>
+                  )}
               </AnimatePresence>
             </div>
           ))}

@@ -1,18 +1,18 @@
-import { filesApi } from '../api/files';
+import { filesApi } from "../api/files";
 
 // Action Types - keep for compatibility
-export const SET_FILE = 'file/SET_FILE';
-export const SET_REPOSITORY_FILES = 'file/SET_REPOSITORY_FILES';
-export const SET_FILE_LOADING = 'file/SET_FILE_LOADING';
-export const SET_FILE_ERROR = 'file/SET_FILE_ERROR';
-export const UPDATE_FILE = 'file/UPDATE_FILE';
-export const ADD_FILE = 'file/ADD_FILE';
+export const SET_FILE = "file/SET_FILE";
+export const SET_REPOSITORY_FILES = "file/SET_REPOSITORY_FILES";
+export const SET_FILE_LOADING = "file/SET_FILE_LOADING";
+export const SET_FILE_ERROR = "file/SET_FILE_ERROR";
+export const UPDATE_FILE = "file/UPDATE_FILE";
+export const ADD_FILE = "file/ADD_FILE";
 
 const initialState = {
   currentFile: null,
   repositoryFiles: [],
   loading: false,
-  error: null
+  error: null,
 };
 
 // Action Creators
@@ -22,48 +22,50 @@ export const actions = {
   setFileLoading: (payload) => ({ type: SET_FILE_LOADING, payload }),
   setFileError: (payload) => ({ type: SET_FILE_ERROR, payload }),
   updateFile: (payload) => ({ type: UPDATE_FILE, payload }),
-  addFile: (payload) => ({ type: ADD_FILE, payload })
+  addFile: (payload) => ({ type: ADD_FILE, payload }),
 };
 
 // Reducer
 export default function fileReducer(state = initialState, action) {
   switch (action.type) {
     case SET_FILE:
-      return { 
-        ...state, 
-        currentFile: action.payload, 
-        error: null 
-      };
-    case SET_REPOSITORY_FILES:
-      return { 
-        ...state, 
-        repositoryFiles: action.payload, 
-        error: null 
-      };
-    case SET_FILE_LOADING:
-      return { 
-        ...state, 
-        loading: action.payload 
-      };
-    case SET_FILE_ERROR:
-      return { 
-        ...state, 
-        error: action.payload, 
-        loading: false 
-      };
-    case UPDATE_FILE:
       return {
         ...state,
-        repositoryFiles: state.repositoryFiles.map(file =>
-          file.id === action.payload.id ? action.payload : file
-        ),
-        currentFile: state.currentFile?.id === action.payload.id ? 
-          action.payload : state.currentFile
+        currentFile: action.payload,
+        error: null,
       };
+    case SET_REPOSITORY_FILES:
+      return {
+        ...state,
+        repositoryFiles: action.payload,
+        error: null,
+      };
+    case SET_FILE_LOADING:
+      return {
+        ...state,
+        loading: action.payload,
+      };
+    case SET_FILE_ERROR:
+      return {
+        ...state,
+        error: action.payload,
+        loading: false,
+      };
+      case UPDATE_FILE:
+        return {
+          ...state,
+          repositoryFiles: state.repositoryFiles.map((file) =>
+            file._id === action.payload._id ? action.payload : file
+          ),
+          currentFile:
+            state.currentFile?._id === action.payload._id
+              ? action.payload
+              : state.currentFile,
+        };
     case ADD_FILE:
       return {
         ...state,
-        repositoryFiles: [...state.repositoryFiles, action.payload]
+        repositoryFiles: [...state.repositoryFiles, action.payload],
       };
     default:
       return state;

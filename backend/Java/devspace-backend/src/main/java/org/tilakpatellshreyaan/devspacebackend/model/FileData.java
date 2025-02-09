@@ -6,6 +6,8 @@ import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.Date;
+
 @Data
 @Document(collection = "files")
 public class FileData {
@@ -16,4 +18,5 @@ public class FileData {
   private String language;
   private ObjectId repositoryId;
   private String content;
+  private Date lastModified;
 }
