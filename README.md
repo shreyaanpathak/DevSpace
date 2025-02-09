@@ -1,6 +1,10 @@
 # 🚀 DevSpace
 > Next-generation collaborative development environment with GPU acceleration
 
+Created by Tilak Patel & Shreyaan Pathak
+
+[Tilak's Portfolio](wwww.tilakpatell.com) 
+
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Version](https://img.shields.io/badge/version-1.0.0-green.svg)
 ![Build Status](https://img.shields.io/badge/build-passing-success.svg)
