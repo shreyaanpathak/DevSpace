@@ -112,7 +112,7 @@ int main() {
 }
 
 async def test_execution(filename, language, code):
-    uri = "ws://localhost:8000/ws"
+    uri = "ws://172.20.10.2/ws"
     print(f"\nTesting {language} execution...")
     print(f"Code to execute:\n{code}")
     
