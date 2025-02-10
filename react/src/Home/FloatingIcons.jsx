@@ -16,9 +16,7 @@ const icons = [
 ];
 
 const FloatingIcons = () => {
-  // Get scroll progress (0 to 1)
   const { scrollYProgress } = useScroll();
-  // Map scroll progress to opacity: fully visible at top, fades out past 10%
   const opacity = useTransform(scrollYProgress, [0, 0.1], [1, 0]);
 
   return (
@@ -30,9 +28,7 @@ const FloatingIcons = () => {
         <motion.div
           key={id}
           className="fixed text-gray-400/50"
-          // Set the initial position using viewport units
           initial={{ x: `${initialX}vw`, y: `${initialY}vh` }}
-          // Animate with a small loop (floating effect)
           animate={{
             x: [`${initialX}vw`, `${initialX + 5}vw`, `${initialX}vw`],
             y: [`${initialY}vh`, `${initialY + 5}vh`, `${initialY}vh`],

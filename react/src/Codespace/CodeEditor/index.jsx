@@ -205,6 +205,13 @@ const CodeEditor = ({
     // Create the shared Y.Text
     const ytext = ydoc.getText("monaco");
 
+    provider.on('sync', (isSynced) => {
+      // Only initialize content if we're synced and the document is empty
+      if (isSynced && ytext.length === 0 && currentFile.content) {
+        ytext.insert(0, currentFile.content);
+      }
+    });
+
 
     // Create the Monaco editor
     editorInstance = monaco.editor.create(editorRef.current, {

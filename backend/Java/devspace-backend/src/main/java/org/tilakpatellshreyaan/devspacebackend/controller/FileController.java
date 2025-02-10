@@ -148,4 +148,32 @@ public class FileController {
     }
   }
 
+  @PostMapping
+  public ResponseEntity<?> createFile(@RequestBody FileData fileData) {
+    try {
+      String repoIdStr = fileData.getRepositoryId().toString();
+      repoIdStr = repoIdStr.replace("ObjectId(", "").replace(")", "");
+
+      ObjectId repositoryId = new ObjectId(repoIdStr);
+      fileData.setRepositoryId(repositoryId);
+      fileData.setLastModified(new Date());
+      System.out.println("Creating file: " + fileData.getFilename());
+      System.out.println("For repository: " + repositoryId);
+      FileData savedFile = fileRepository.save(fileData);
+      return ResponseEntity.ok(savedFile);
+
+    } catch (IllegalArgumentException e) {
+      System.err.println("Invalid repository ID format: " + e.getMessage());
+      return ResponseEntity.status(400).body(Map.of(
+              "error", "Invalid repository ID format",
+              "details", e.getMessage()
+      ));
+    } catch (Exception e) {
+      System.err.println("Error creating file: " + e.getMessage());
+      return ResponseEntity.status(500).body(Map.of(
+              "error", "Failed to create file",
+              "details", e.getMessage()
+      ));
+    }
+  }
 }

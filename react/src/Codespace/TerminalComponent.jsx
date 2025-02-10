@@ -14,7 +14,9 @@ const TerminalComponent = () => {
     const xtermRef = useRef(null);
     const wsRef = useRef(null);
     const [isRunning, setIsRunning] = useState(false);
+    const [workingDir, setWorkingDir] = useState('/workspace');
     const currentFile = useSelector(state => state.file.currentFile);
+    const cmdBufferRef = useRef('');
 
     useEffect(() => {
         const term = new Terminal({
@@ -47,7 +49,111 @@ const TerminalComponent = () => {
                 fitAddon.fit();
             }, 100);
             xtermRef.current = term;
-            term.write('$ ');
+
+            // Initial terminal text
+            term.writeln('DevSpace Terminal v1.0.0');
+            term.writeln('Type "help" for available commands');
+            term.write(`\r\n${workingDir}$ `);
+
+            // Handle terminal input
+            term.onKey(({ key, domEvent }) => {
+                const printable = !domEvent.altKey && !domEvent.ctrlKey && !domEvent.metaKey;
+
+                if (domEvent.keyCode === 13) { // Enter
+                    term.write('\r\n');
+                    handleCommand(cmdBufferRef.current.trim());
+                    cmdBufferRef.current = '';
+                } else if (domEvent.keyCode === 8) { // Backspace
+                    if (cmdBufferRef.current.length > 0) {
+                        cmdBufferRef.current = cmdBufferRef.current.slice(0, -1);
+                        term.write('\b \b');
+                    }
+                } else if (printable) {
+                    cmdBufferRef.current += key;
+                    term.write(key);
+                }
+            });
+
+            const handleCommand = async (cmd) => {
+                if (!cmd) {
+                    term.write(`\r\n${workingDir}$ `);
+                    return;
+                }
+
+                const args = cmd.split(' ');
+                const command = args[0].toLowerCase();
+
+                switch (command) {
+                    case 'cd':
+                        if (args[1]) {
+                            if (args[1] === '..') {
+                                const newDir = workingDir.split('/').slice(0, -1).join('/') || '/';
+                                setWorkingDir(newDir);
+                                term.writeln(`Changed directory to ${newDir}`);
+                            } else {
+                                const newDir = args[1].startsWith('/') ? args[1] : `${workingDir}/${args[1]}`;
+                                setWorkingDir(newDir);
+                                term.writeln(`Changed directory to ${newDir}`);
+                            }
+                        } else {
+                            term.writeln('Usage: cd <directory>');
+                        }
+                        term.write(`\r\n${workingDir}$ `);
+                        break;
+
+                    case 'pwd':
+                        term.writeln(workingDir);
+                        term.write(`\r\n${workingDir}$ `);
+                        break;
+
+                    case 'ls':
+                        term.writeln('Directory listing:');
+                        term.writeln('.');
+                        term.writeln('..');
+                        if (currentFile) {
+                            term.writeln(currentFile.filename);
+                        }
+                        term.write(`\r\n${workingDir}$ `);
+                        break;
+
+                    case 'clear':
+                        term.clear();
+                        term.write(`${workingDir}$ `);
+                        break;
+
+                    case 'help':
+                        term.writeln('Available commands:');
+                        term.writeln('  cd <dir>    Change directory');
+                        term.writeln('  pwd         Print working directory');
+                        term.writeln('  ls          List directory contents');
+                        term.writeln('  clear       Clear terminal');
+                        term.writeln('  help        Show this help message');
+                        term.writeln('  run         Execute current file');
+                        term.write(`\r\n${workingDir}$ `);
+                        break;
+
+                    case 'run':
+                        if (currentFile) {
+                            await handleExecution();
+                        } else {
+                            term.writeln('No file selected for execution');
+                            term.write(`\r\n${workingDir}$ `);
+                        }
+                        break;
+
+                    default:
+                        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                            wsRef.current.send(JSON.stringify({
+                                type: 'command',
+                                command: cmd,
+                                workingDir: workingDir
+                            }));
+                        } else {
+                            term.writeln(`Command not found: ${command}`);
+                            term.write(`\r\n${workingDir}$ `);
+                        }
+                }
+            };
 
             const handleResize = () => {
                 fitAddon.fit();
@@ -59,7 +165,7 @@ const TerminalComponent = () => {
                 term.dispose();
             };
         }
-    }, [theme]);
+    }, [theme, workingDir, currentFile]);
 
     useEffect(() => {
         const connectWebSocket = () => {
@@ -68,7 +174,7 @@ const TerminalComponent = () => {
             ws.onopen = () => {
                 if (xtermRef.current) {
                     xtermRef.current.writeln('\r\n\x1b[32mConnected to execution server\x1b[0m');
-                    xtermRef.current.write('\r\n$ ');
+                    xtermRef.current.write(`\r\n${workingDir}$ `);
                 }
             };
 
@@ -87,7 +193,7 @@ const TerminalComponent = () => {
                                 if (data.status === 'complete') {
                                     setIsRunning(false);
                                     xtermRef.current.writeln('\r\n\x1b[32mExecution completed (exit code: ' + data.exit_code + ')\x1b[0m');
-                                    xtermRef.current.write('\r\n$ ');
+                                    xtermRef.current.write(`\r\n${workingDir}$ `);
                                 }
                                 break;
                             default:
@@ -95,6 +201,7 @@ const TerminalComponent = () => {
                         }
                     } catch (error) {
                         xtermRef.current.writeln('\r\n' + event.data);
+                        xtermRef.current.write(`\r\n${workingDir}$ `);
                     }
                 }
             };
@@ -102,7 +209,7 @@ const TerminalComponent = () => {
             ws.onclose = () => {
                 if (xtermRef.current) {
                     xtermRef.current.writeln('\r\n\x1b[31mDisconnected from execution server\x1b[0m');
-                    xtermRef.current.write('\r\n$ ');
+                    xtermRef.current.write(`\r\n${workingDir}$ `);
                 }
                 setTimeout(connectWebSocket, 5000);
             };
@@ -110,7 +217,7 @@ const TerminalComponent = () => {
             ws.onerror = (error) => {
                 if (xtermRef.current) {
                     xtermRef.current.writeln('\r\n\x1b[31mWebSocket error: ' + error.message + '\x1b[0m');
-                    xtermRef.current.write('\r\n$ ');
+                    xtermRef.current.write(`\r\n${workingDir}$ `);
                 }
             };
 
@@ -124,13 +231,13 @@ const TerminalComponent = () => {
                 wsRef.current.close();
             }
         };
-    }, []);
+    }, [workingDir]);
 
     const handleExecution = async () => {
         if (!currentFile || !currentFile.content) {
             if (xtermRef.current) {
                 xtermRef.current.writeln('\r\n\x1b[31mNo file selected for execution\x1b[0m');
-                xtermRef.current.write('\r\n$ ');
+                xtermRef.current.write(`\r\n${workingDir}$ `);
             }
             return;
         }
@@ -145,7 +252,8 @@ const TerminalComponent = () => {
                 const fileData = {
                     filename: currentFile.filename,
                     language: currentFile.language || 'python',
-                    content: currentFile.content
+                    content: currentFile.content,
+                    workingDir: workingDir
                 };
                 wsRef.current.send(JSON.stringify(fileData));
             } else {
@@ -154,7 +262,7 @@ const TerminalComponent = () => {
         } catch (error) {
             if (xtermRef.current) {
                 xtermRef.current.writeln('\r\n\x1b[31mError starting execution: ' + error.message + '\x1b[0m');
-                xtermRef.current.write('\r\n$ ');
+                xtermRef.current.write(`\r\n${workingDir}$ `);
             }
             setIsRunning(false);
         }
@@ -165,7 +273,7 @@ const TerminalComponent = () => {
             setIsRunning(false);
             if (xtermRef.current) {
                 xtermRef.current.writeln('\r\n\x1b[31mExecution stopped by user\x1b[0m');
-                xtermRef.current.write('\r\n$ ');
+                xtermRef.current.write(`\r\n${workingDir}$ `);
             }
             if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
                 wsRef.current.send(JSON.stringify({ type: 'stop' }));

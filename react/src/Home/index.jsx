@@ -10,6 +10,8 @@ import {
   FaChartLine,
   FaLaptopCode,
   FaCode,
+  FaLinkedin,
+  FaGlobe,
 } from "react-icons/fa";
 import { useTheme } from "./ThemeContext";
 import Navbar from "../Navbar";
@@ -42,7 +44,6 @@ const FeatureCard = ({ icon: Icon, title, description }) => {
     </motion.div>
   );
 };
-
 
 const FutureFeature = ({ icon: Icon, text, color }) => (
   <motion.div
@@ -333,7 +334,7 @@ const Home = () => {
               </Link>
               {/* Add new workspace button */}
               <Link
-                to="/Codespace"
+                to="/devspaces"
                 className={`px-8 py-4 ${theme.glass} rounded-lg text-gray-300 
                   font-semibold hover:bg-white/10 transition-all duration-300
                   flex items-center gap-2`}
@@ -342,6 +343,208 @@ const Home = () => {
                 <FaCode className="text-xl" />
               </Link>
             </div>
+          </motion.div>
+        </Section>
+        {/* ================== HACKATHON WIN & TEAM ================== */}
+        {/* ================== HACKATHON WIN & TEAM ================== */}
+        <Section className={`${theme.glass} relative overflow-hidden`}>
+          {/* Animated Background Elements */}
+          <GlowingOrb className="absolute -top-40 -right-40 w-96 h-96 opacity-30" />
+          <GlowingOrb
+            className="absolute -bottom-40 -left-40 w-96 h-96 opacity-30"
+            colorIndex={1}
+          />
+          <div className="absolute inset-0 bg-gradient-radial from-transparent to-black/40" />
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="relative z-10 space-y-16"
+          >
+            {/* Trophy Section */}
+            <div className="text-center space-y-6">
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                whileInView={{ scale: 1, opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="inline-block"
+              >
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  className={`p-6 rounded-full ${theme.panel} backdrop-blur-xl`}
+                >
+                  <motion.div
+                    animate={{
+                      rotate: [0, 5, -5, 0],
+                      scale: [1, 1.1, 1],
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                    className="text-7xl"
+                  >
+                    🏆
+                  </motion.div>
+                </motion.div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                className="space-y-4"
+              >
+                <GlitchText>
+                  <h2
+                    className={`text-5xl md:text-6xl font-bold bg-gradient-to-r ${theme.primary} 
+            bg-clip-text text-transparent`}
+                  >
+                    HackBeanpot 2025 Champions
+                  </h2>
+                </GlitchText>
+
+                <p className="text-2xl text-gray-400">
+                  Canyon Climbers Award for Most Technically Challenging Project
+                </p>
+              </motion.div>
+            </div>
+
+            {/* Team Section */}
+            <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+              {[
+                {
+                  name: "Tilak Patel",
+                  role: "Full Stack Developer",
+                  bio: "Backend architect & Frontend innovator. Specialized in GPU acceleration and real-time collaboration.",
+                  image:
+                    "https://media.licdn.com/dms/image/v2/D4E03AQEW7-2-eOBROA/profile-displayphoto-shrink_400_400/B4EZSa5GjJHAAg-/0/1737765451376?e=1744848000&v=beta&t=qkkwY0KmTcLv_JeXhc1KVqDBdm6M0uZ7nmEkluG7JlE",
+                  links: {
+                    github: "https://github.com/tilakpatell",
+                    linkedin: "https://www.linkedin.com/in/tilakpatell/",
+                    portfolio: "https://www.tilakpatell.com",
+                  },
+                },
+                {
+                  name: "Shreyaan Pathak",
+                  role: "Full Stack Developer",
+                  bio: "Full stack virtuoso with expertise in distributed systems and cloud architecture.",
+                  image:
+                    "https://media.licdn.com/dms/image/v2/D5603AQFBeXbjxZajwg/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1673681220794?e=2147483647&v=beta&t=XAYkwBjOAvtSQu0pjIDeb-1QkMPH4sjaegJgRiDJRiM",
+                  links: {
+                    github: "https://github.com/shreyaanpathak",
+                    linkedin: "https://www.linkedin.com/in/shreyaan-pathak/",
+                  },
+                },
+              ].map((member, index) => (
+                <motion.div
+                  key={member.name}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.2 }}
+                  className={`${theme.panel} rounded-2xl overflow-hidden backdrop-blur-xl`}
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                    className="relative group"
+                  >
+                    {/* Profile Section */}
+                    <div className="p-6">
+                      <div className="flex items-center gap-6">
+                        {/* Profile Picture */}
+                        <motion.div
+                          whileHover={{ scale: 1.1, rotate: 5 }}
+                          className="relative w-24 h-24"
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl rotate-6" />
+                          <img
+                            src={member.image}
+                            alt={member.name}
+                            className="relative w-full h-full object-cover rounded-xl"
+                            onError={(e) => {
+                              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                member.name
+                              )}&background=random`;
+                            }}
+                          />
+                        </motion.div>
+
+                        {/* Name and Role */}
+                        <div className="flex-1">
+                          <h3 className="text-2xl font-bold text-white mb-1">
+                            {member.name}
+                          </h3>
+                          <p className="text-gray-400">{member.role}</p>
+                        </div>
+                      </div>
+
+                      {/* Bio */}
+                      <p className="mt-4 text-gray-300 leading-relaxed">
+                        {member.bio}
+                      </p>
+                      {/* Social Links */}
+                      <div className="mt-6 flex gap-4">
+                        {Object.entries(member.links).map(([platform, url]) => (
+                          <a
+                            key={platform}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`p-3 rounded-xl ${theme.glass} hover:bg-white/10 transition-all duration-300 group cursor-pointer`}
+                          >
+                            {platform === "github" && (
+                              <FaGithub className="text-xl text-gray-300 group-hover:text-white" />
+                            )}
+                            {platform === "linkedin" && (
+                              <FaLinkedin className="text-xl text-gray-300 group-hover:text-white" />
+                            )}
+                            {platform === "portfolio" && (
+                              <FaGlobe className="text-xl text-gray-300 group-hover:text-white" />
+                            )}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Interactive Hover Effect */}
+                    <div
+                      className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 
+              group-hover:opacity-100 transition-opacity duration-300"
+                    />
+                  </motion.div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* HackBeanpot Link */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center"
+            >
+              <motion.a
+                href="https://hackbeanpot.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                whileHover={{ scale: 1.05 }}
+                className={`inline-flex items-center gap-3 ${theme.panel} px-6 py-3 rounded-xl
+          hover:bg-white/5 transition-all duration-300`}
+              >
+                <div className="p-2 rounded-lg bg-purple-500/10">
+                  <FaCode className="text-xl text-purple-400" />
+                </div>
+                <span className="text-gray-200">
+                  Learn more about HackBeanpot
+                </span>
+                <FaArrowRight className="text-gray-400" />
+              </motion.a>
+            </motion.div>
           </motion.div>
         </Section>
       </div>
